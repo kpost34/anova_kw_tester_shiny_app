@@ -7,9 +7,27 @@ library(tidyverse)
 library(rstatix)
 
 #source in code from part 1
-source(here("")
+source(here("01_anova_assump_transform_code.R"))
+#pulls in functions data_transformer, residual_extracter, and samp_maker
+#pulls in sampDF (sample data frame) (and other data frames)
 
-#### Run ANOVA==========================================================================
-### 
+#### Run ANOVA and post-hoc tests==========================================================================
+### Run one-way ANOVA on data frame
+anova(mod)
+
+
+### Run post-hoc tests
+## Tukey's HSD tests
+
+
+### KEEP IN MIND
+# experimentwise error rate
+# CIs - return these
+# choice of test?
+
+
+
+
+
 
 

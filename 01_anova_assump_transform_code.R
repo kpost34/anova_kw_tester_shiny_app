@@ -157,7 +157,7 @@ mod_log_residDF %>%
 
 
 ### Create function to build DF of transformed values and residuals-----------------------------------------
-data_transformer-function(data,trans,test){
+data_transformer<-function(data,trans,test){
   data %>%
     mutate(trans_value=trans(value)) %>%
     lm(trans_value~trmt,.) %>%
