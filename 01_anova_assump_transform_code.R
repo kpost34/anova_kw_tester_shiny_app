@@ -1,0 +1,173 @@
+# R code to develop Shiny app for running ANOVAs or K-W tests
+# Part 1 of 3: exploratory tables and plots, ANOVA assumptions, and transformations
+
+#load packages
+library(tidyverse)
+library(broom)
+library(rstatix)
+
+#### Simulate data-=======================================================================================
+### Create three vectors from random normal distribution
+set.seed(101)
+A<-rnorm(10,5,1)
+B<-rnorm(10,8,2)
+C<-rnorm(10,10,4)
+
+### Combine vectors into a tibble (long format)
+tibble(A,B,C) %>% 
+  pivot_longer(cols=everything(),names_to="trmt",values_to="value") -> sampDF
+
+
+### Create function to make tibble-------------------------------------------------------------------------
+samp_maker<-function(n=10){
+  tibble(
+    A=rnorm(n,10,1),
+    B=rnorm(n,14,3),
+    C=rnorm(n,18,5)
+  ) %>% 
+    pivot_longer(cols=everything(),names_to="trmt",values_to="value")
+}
+
+
+#### Exploratory data analysis============================================================================
+### Summary data table
+sampDF %>%
+  group_by(trmt) %>%
+  summarize(across(value, list(n=length,min=min,median=median,mean=mean,max=max,sd=sd,se=function(x) sd(x)/sqrt(length(x))),.names="{.fn}"))
+
+### Exploratory plots
+## Boxplot
+sampDF %>%
+  ggplot(aes(x=trmt,y=value)) +
+  geom_boxplot(outlier.shape=NA) +
+  geom_point(aes(color=trmt),position=position_jitterdodge()) +
+  scale_color_viridis_d(begin=0,end=0.65) +
+  theme_bw() +
+  theme(legend.position="bottom")
+
+## Barplot
+sampDF %>%
+  ggplot(aes(x=trmt,y=value,fill=trmt)) +
+  stat_summary(fun="mean",geom="bar") +
+  stat_summary(fun.data="mean_se",geom="errorbar",width=0.3) +
+  scale_fill_viridis_d(begin=0,end=0.65) +
+  scale_y_continuous(expand=expansion(mult=c(0,0.05))) +
+  theme_bw()
+
+
+#### ANOVA assumptions=====================================================================================
+### Pull residuals
+mod<-lm(value~trmt,data=sampDF)
+augment(mod)[,c("trmt","value",".resid")] %>%
+  rename(resid=".resid") -> mod_residDF
+
+### Test normality assumption
+## Graphically
+mod_residDF %>%
+  ggplot(aes(sample=resid)) +
+  stat_qq(color="steelblue") + 
+  stat_qq_line() +
+  labs(x="Theoretical quantiles",
+       y="Standardized residuals") +
+  theme_bw()
+#many outliers at the tails
+
+## Statistically
+mod_residDF %>%
+  shapiro_test(resid) 
+#p=0.0235; non-normal
+
+
+### Test equal variance assumption
+## Graphically 
+plot(mod,which=3)
+#line is clearly not horizontal, so variance unequal
+
+## Statistically
+mod_residDF %>%
+  levene_test(value~trmt)
+#p=0.0113; unequal variance
+
+
+### Create function to pull residuals------------------------------------------------------------------
+residual_extracter<-function(data,y, trmt){
+  mod<-lm(y~trmt,data)
+  augment(mod)[,c("trmt","value",".resid")] %>%
+    rename(resid=".resid") -> mod_residDF
+  mod_residDF
+}
+
+
+#### Data transformations & ANOVA assumptions===========================================================
+### Transform data
+## Log 
+sampDF %>%
+  mutate(log_value=log(value)) -> sampDF_log
+
+mod_log<-lm(log_value~trmt,data=sampDF_log)
+augment(mod_log)[,c("trmt","log_value",".resid")] %>%
+  rename(resid=".resid") -> mod_log_residDF
+
+
+## Square-root
+sampDF %>%
+  mutate(sqrt_value=sqrt(value)) -> sampDF_sqrt
+
+mod_sqrt<-lm(sqrt_value~trmt,data=sampDF_sqrt)
+augment(mod_sqrt)[,c("trmt","sqrt_value",".resid")] %>%
+  rename(resid=".resid") -> mod_sqrt_residDF
+
+
+## Reciprocal
+sampDF %>%
+  mutate(recip_value=1/value) -> sampDF_recip
+
+mod_recip<-lm(recip_value~trmt,data=sampDF_recip)
+augment(mod_recip)[,c("trmt","recip_value",".resid")] %>%
+  rename(resid=".resid") -> mod_recip_residDF
+
+
+### Test assumptions (using log-transform as an example)
+## Normality
+# Graphically
+mod_log_residDF %>%
+  ggplot(aes(sample=resid)) +
+  stat_qq(color="steelblue") + 
+  stat_qq_line() +
+  labs(x="Theoretical quantiles",
+       y="Standardized residuals") +
+  theme_bw()
+#highly skewed tail; appears non-normal
+
+# Statistically
+mod_log_residDF %>%
+  shapiro_test(resid) 
+#p=0.0054; non-normal
+
+
+## Equal variance
+# Graphically
+plot(mod_log,which=3)
+#non horizontal; appears unequal
+
+# Statistically
+mod_log_residDF %>%
+  levene_test(log_value~trmt)
+#equal variance
+
+
+### Create function to build DF of transformed values and residuals-----------------------------------------
+data_transformer-function(data,trans,test){
+  data %>%
+    mutate(trans_value=trans(value)) %>%
+    lm(trans_value~trmt,.) %>%
+    augment() %>%
+    select(trmt,trans_value,resid=".resid") -> sampDF_trans
+  sampDF_trans
+}
+
+
+
+
+
+
