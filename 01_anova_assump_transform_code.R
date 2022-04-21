@@ -114,7 +114,8 @@ mod_residDF %>%
 #p=0.0113; unequal variance
 
 
-### Create function to pull residuals------------------------------------------------------------------
+### Create functions for ANOVA assumptions ------------------------------------------------------------------
+## Pull residuals
 residual_extracter<-function(data,y, trmt){
   mod<-lm(y~trmt,data)
   augment(mod)[,c("trmt","value",".resid")] %>%
@@ -122,6 +123,18 @@ residual_extracter<-function(data,y, trmt){
   mod_residDF
 }
 
+## Draw qqplot in ggplot2
+qqplotter<-function(df,resid){
+mod_residDF %>%
+  ggplot(aes(sample={{resid}})) +
+  stat_qq(color="steelblue") + 
+  stat_qq_line() +
+  labs(x="Theoretical quantiles",
+       y="Standardized residuals") +
+  theme_bw()
+}
+
+qqplotter(mod_residDF,resid)
 
 #### Data transformations & ANOVA assumptions===========================================================
 ### Transform data
@@ -155,6 +168,7 @@ augment(mod_recip)[,c("trmt","recip_value",".resid")] %>%
 ### Test assumptions (using log-transform as an example)
 ## Normality
 # Graphically
+#hard-coded
 mod_log_residDF %>%
   ggplot(aes(sample=resid)) +
   stat_qq(color="steelblue") + 
@@ -163,6 +177,9 @@ mod_log_residDF %>%
        y="Standardized residuals") +
   theme_bw()
 #highly skewed tail; appears non-normal
+
+#using function
+qqplotter(mod_log_residDF,resid)
 
 # Statistically
 mod_log_residDF %>%
@@ -182,16 +199,17 @@ mod_log_residDF %>%
 
 
 ### Create function to build DF of transformed values and residuals-----------------------------------------
-data_transformer<-function(data,trans,test){
+data_transformer<-function(data,x,y,func){
+  trmt<-enquo(x)
   data %>%
-    mutate(trans_value=trans(value)) %>%
+    mutate(trans_value=func({{y}})) %>%
     lm(trans_value~trmt,.) %>%
     augment() %>%
     select(trmt,trans_value,resid=".resid") -> sampDF_trans
   sampDF_trans
 }
 
-
+data_transformer(sampDF,trmt,value,log)
 
 
 

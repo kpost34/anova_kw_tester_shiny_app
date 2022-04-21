@@ -51,7 +51,26 @@ tukey_hsd(mod) %>%
   theme(axis.text=element_text(size=12),
         axis.title=element_text(size=13))
   
-  
+
+### Create function to graph Tukey HSD results----------------------------------------------------
+tukey_plotter<-function(model){
+  tukey_hsd(mod) %>%
+    select(-null.value) %>%
+    mutate(comp=paste(group1,group2,sep="-"),
+           comp=fct_rev(fct_inorder(comp))) %>%
+    ggplot() +
+    geom_linerange(aes(x=comp,ymin=conf.low,ymax=conf.high)) +
+    geom_hline(yintercept=0,linetype=2,color="blue") +
+    geom_point(aes(x=comp,y=estimate),size=3) +
+    coord_flip() +
+    labs(x="Mean comparison",
+         y="Mean difference") +
+    theme_bw() +
+    theme(axis.text=element_text(size=12),
+          axis.title=element_text(size=13))
+}
+
+tukey_plotter(mod)
 
 
 
