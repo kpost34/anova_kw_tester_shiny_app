@@ -55,6 +55,31 @@ sampDF %>%
   theme_bw()
 
 
+### Create functions to build boxplots and barplots
+boxplotter<-function(df,x,y){
+  df %>%
+    ggplot(aes(x={{x}},y={{y}})) +
+    geom_boxplot(outlier.shape=NA) +
+    geom_point(aes(color={{x}}),position=position_jitterdodge()) +
+    scale_color_viridis_d(begin=0,end=0.65) +
+    theme_bw() +
+    theme(legend.position="bottom")
+}
+
+barplotter<-function(df,x,y){
+  df %>%
+    ggplot(aes(x={{x}},y={{y}},fill={{x}})) +
+    stat_summary(fun="mean",geom="bar") +
+    stat_summary(fun.data="mean_se",geom="errorbar",width=0.3) +
+    scale_fill_viridis_d(begin=0,end=0.65) +
+    scale_y_continuous(expand=expansion(mult=c(0,0.05))) +
+    theme_bw()
+}
+
+boxplotter(sampDF,trmt,value)
+barplotter(sampDF,trmt,value)
+
+
 #### ANOVA assumptions=====================================================================================
 ### Pull residuals
 mod<-lm(value~trmt,data=sampDF)
