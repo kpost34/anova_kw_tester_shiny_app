@@ -43,7 +43,11 @@ sampDF %>%
   geom_point(aes(color=trmt),position=position_jitterdodge()) +
   scale_color_viridis_d(begin=0,end=0.65) +
   theme_bw() +
-  theme(legend.position="bottom")
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=13),
+        legend.position="bottom",
+        legend.title=element_blank(),
+        legend.text=element_text(size=12))
 
 ## Barplot
 sampDF %>%
@@ -52,7 +56,11 @@ sampDF %>%
   stat_summary(fun.data="mean_se",geom="errorbar",width=0.3) +
   scale_fill_viridis_d(begin=0,end=0.65) +
   scale_y_continuous(expand=expansion(mult=c(0,0.05))) +
-  theme_bw()
+  theme_bw() +
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=13),
+        legend.title=element_blank(),
+        legend.text=element_text(size=12))
 
 
 ### Create functions to build boxplots and barplots
@@ -63,7 +71,11 @@ boxplotter<-function(df,x,y){
     geom_point(aes(color={{x}}),position=position_jitterdodge()) +
     scale_color_viridis_d(begin=0,end=0.65) +
     theme_bw() +
-    theme(legend.position="bottom")
+    theme(axis.text=element_text(size=12),
+          axis.title=element_text(size=13),
+          legend.position="bottom",
+          legend.title=element_blank(),
+          legend.text=element_text(size=12))
 }
 
 barplotter<-function(df,x,y){
@@ -73,7 +85,11 @@ barplotter<-function(df,x,y){
     stat_summary(fun.data="mean_se",geom="errorbar",width=0.3) +
     scale_fill_viridis_d(begin=0,end=0.65) +
     scale_y_continuous(expand=expansion(mult=c(0,0.05))) +
-    theme_bw()
+    theme_bw() +
+    theme(axis.text=element_text(size=12),
+          axis.title=element_text(size=13),
+          legend.title=element_blank(),
+          legend.text=element_text(size=12))
 }
 
 boxplotter(sampDF,trmt,value)
@@ -94,7 +110,9 @@ mod_residDF %>%
   stat_qq_line() +
   labs(x="Theoretical quantiles",
        y="Standardized residuals") +
-  theme_bw()
+  theme_bw() +
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=13))
 #many outliers at the tails
 
 ## Statistically
@@ -131,7 +149,9 @@ mod_residDF %>%
   stat_qq_line() +
   labs(x="Theoretical quantiles",
        y="Standardized residuals") +
-  theme_bw()
+  theme_bw() +
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=13))
 }
 
 qqplotter(mod_residDF,resid)
@@ -175,7 +195,9 @@ mod_log_residDF %>%
   stat_qq_line() +
   labs(x="Theoretical quantiles",
        y="Standardized residuals") +
-  theme_bw()
+  theme_bw() +
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=13))
 #highly skewed tail; appears non-normal
 
 #using function

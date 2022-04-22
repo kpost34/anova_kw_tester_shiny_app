@@ -44,6 +44,7 @@ tukey_hsd(mod) %>%
   geom_linerange(aes(x=comp,ymin=conf.low,ymax=conf.high)) +
   geom_hline(yintercept=0,linetype=2,color="blue") +
   geom_point(aes(x=comp,y=estimate),size=3) +
+  geom_text(aes(x=comp,y=estimate,label=paste0("p=",p.adj)),nudge_x=.1) +
   coord_flip() +
   labs(x="Mean comparison",
        y="Mean difference") +
@@ -62,6 +63,7 @@ tukey_plotter<-function(model){
     geom_linerange(aes(x=comp,ymin=conf.low,ymax=conf.high)) +
     geom_hline(yintercept=0,linetype=2,color="blue") +
     geom_point(aes(x=comp,y=estimate),size=3) +
+    geom_text(aes(x=comp,y=estimate,label=paste0("p=",p.adj)),nudge_x=.1) +
     coord_flip() +
     labs(x="Mean comparison",
          y="Mean difference") +

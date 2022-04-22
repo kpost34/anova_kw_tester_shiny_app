@@ -20,7 +20,11 @@ sampDF %>%
   geom_point(aes(color=trmt),position=position_jitterdodge()) +
   scale_color_viridis_d(begin=0,end=0.65) +
   theme_bw() +
-  theme(legend.position="bottom")
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=13),
+        legend.position="bottom",
+        legend.title=element_blank(),
+        legend.text=element_text(size=12))
 
 ### Same but with custom function
 boxplotter(df=sampDF,x=trmt,y=value)
