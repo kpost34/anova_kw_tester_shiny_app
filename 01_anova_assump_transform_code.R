@@ -3,7 +3,6 @@
 
 #load packages
 library(tidyverse)
-library(broom)
 library(rstatix)
 
 #### Simulate data-=======================================================================================
@@ -30,10 +29,13 @@ samp_maker<-function(n=10){
 
 
 #### Exploratory data analysis============================================================================
+#create list for summary tables
+stat_list<-list(n=length,min=min,median=median,mean=mean,max=max,sd=sd,se=function(x) sd(x)/sqrt(length(x)))
+
 ### Summary data table
 sampDF %>%
   group_by(trmt) %>%
-  summarize(across(value, list(n=length,min=min,median=median,mean=mean,max=max,sd=sd,se=function(x) sd(x)/sqrt(length(x))),.names="{.fn}"))
+  summarize(across(value, stat_list,.names="{.fn}"))
 
 ### Exploratory plots
 ## Boxplot
@@ -99,8 +101,8 @@ barplotter(sampDF,trmt,value)
 #### ANOVA assumptions=====================================================================================
 ### Pull residuals
 mod<-lm(value~trmt,data=sampDF)
-augment(mod)[,c("trmt","value",".resid")] %>%
-  rename(resid=".resid") -> mod_residDF
+mod_residDF<-bind_cols(sampDF,resid=resid(mod))
+
 
 ### Test normality assumption
 ## Graphically
@@ -132,15 +134,7 @@ mod_residDF %>%
 #p=0.0113; unequal variance
 
 
-### Create functions for ANOVA assumptions ------------------------------------------------------------------
-## Pull residuals
-residual_extracter<-function(data,y, trmt){
-  mod<-lm(y~trmt,data)
-  augment(mod)[,c("trmt","value",".resid")] %>%
-    rename(resid=".resid") -> mod_residDF
-  mod_residDF
-}
-
+### Create functions to draw qq plot in ggplot2------------------------------------------------------------------
 ## Draw qqplot in ggplot2
 qqplotter<-function(df,resid){
 mod_residDF %>%
@@ -161,6 +155,13 @@ qqplotter(mod_residDF,resid)
 ## Log 
 sampDF %>%
   mutate(log_value=log(value)) -> sampDF_log
+
+sampDF %>%
+  mutate(log_value=log(value)) %>%
+  lm(log_value~trmt,.) -> log_mod
+
+sampDF_log %>%
+  bind_cols(resid_log=resid(log_mod)) -> mod_log_residDF
 
 mod_log<-lm(log_value~trmt,data=sampDF_log)
 augment(mod_log)[,c("trmt","log_value",".resid")] %>%
@@ -222,12 +223,12 @@ mod_log_residDF %>%
 
 ### Create function to build DF of transformed values and residuals-----------------------------------------
 data_transformer<-function(data,x,y,func){
-  trmt<-enquo(x)
+  ind<-enquo(x)
   data %>%
     mutate(trans_value=func({{y}})) %>%
-    lm(trans_value~trmt,.) %>%
+    lm(trans_value~ind,.) %>%
     augment() %>%
-    select(trmt,trans_value,resid=".resid") -> sampDF_trans
+    select(ind,trans_value,resid=".resid") -> sampDF_trans
   sampDF_trans
 }
 
