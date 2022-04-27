@@ -35,6 +35,7 @@ boxplotter<-function(df,x,y){
           legend.text=element_text(size=12))
 }
 
+
 # Barplots
 barplotter<-function(df,x,y){
   df %>%
@@ -51,15 +52,6 @@ barplotter<-function(df,x,y){
 }
 
 
-## Function to pull residuals from linear model
-residual_extracter<-function(data,y, trmt){
-  mod<-lm(y~trmt,data)
-  augment(mod)[,c("trmt","value",".resid")] %>%
-    rename(resid=".resid") -> mod_residDF
-  mod_residDF
-}
-
-
 ## Function to draw qqplot in ggplot2
 qqplotter<-function(df,resid){
   mod_residDF %>%
@@ -71,18 +63,6 @@ qqplotter<-function(df,resid){
     theme_bw() +
     theme(axis.text=element_text(size=12),
           axis.title=element_text(size=13))
-}
-
-
-## Function to build data frame of transformed values and residuals
-data_transformer<-function(data,x,y,func){
-  trmt<-enquo(x)
-  data %>%
-    mutate(trans_value=func({{y}})) %>%
-    lm(trans_value~trmt,.) %>%
-    augment() %>%
-    select(trmt,trans_value,resid=".resid") -> sampDF_trans
-  sampDF_trans
 }
 
 

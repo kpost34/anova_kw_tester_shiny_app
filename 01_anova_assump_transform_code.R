@@ -100,6 +100,7 @@ barplotter(sampDF,trmt,value)
 
 #### ANOVA assumptions=====================================================================================
 ### Pull residuals
+#create and store model
 mod<-lm(value~trmt,data=sampDF)
 mod_residDF<-bind_cols(sampDF,resid=resid(mod))
 
@@ -136,9 +137,9 @@ mod_residDF %>%
 
 ### Create functions to draw qq plot in ggplot2------------------------------------------------------------------
 ## Draw qqplot in ggplot2
-qqplotter<-function(df,resid){
-mod_residDF %>%
-  ggplot(aes(sample={{resid}})) +
+qqplotter<-function(df,errors){
+df %>%
+  ggplot(aes(sample={{errors}})) +
   stat_qq(color="steelblue") + 
   stat_qq_line() +
   labs(x="Theoretical quantiles",
@@ -153,37 +154,39 @@ qqplotter(mod_residDF,resid)
 #### Data transformations & ANOVA assumptions===========================================================
 ### Transform data
 ## Log 
+# Create DF with transformed response variable
 sampDF %>%
   mutate(log_value=log(value)) -> sampDF_log
 
-sampDF %>%
-  mutate(log_value=log(value)) %>%
-  lm(log_value~trmt,.) -> log_mod
-
+# Create model object
 sampDF_log %>%
-  bind_cols(resid_log=resid(log_mod)) -> mod_log_residDF
+  lm(log_value~trmt,.) -> mod_log
 
-mod_log<-lm(log_value~trmt,data=sampDF_log)
-augment(mod_log)[,c("trmt","log_value",".resid")] %>%
-  rename(resid=".resid") -> mod_log_residDF
+# Append residuals to new DF
+sampDF_log %>%
+  bind_cols(resid_log=resid(mod_log)) -> mod_log_residDF
 
 
 ## Square-root
 sampDF %>%
   mutate(sqrt_value=sqrt(value)) -> sampDF_sqrt
 
-mod_sqrt<-lm(sqrt_value~trmt,data=sampDF_sqrt)
-augment(mod_sqrt)[,c("trmt","sqrt_value",".resid")] %>%
-  rename(resid=".resid") -> mod_sqrt_residDF
+sampDF_sqrt %>%
+  lm(sqrt_value~trmt,.) -> mod_sqrt
+
+sampDF_sqrt %>%
+  bind_cols(resid_sqrt=resid(mod_sqrt)) -> mod_sqrt_residDF
 
 
 ## Reciprocal
 sampDF %>%
   mutate(recip_value=1/value) -> sampDF_recip
 
-mod_recip<-lm(recip_value~trmt,data=sampDF_recip)
-augment(mod_recip)[,c("trmt","recip_value",".resid")] %>%
-  rename(resid=".resid") -> mod_recip_residDF
+sampDF_recip %>%
+  lm(recip_value~trmt,.) -> mod_recip
+
+sampDF_recip %>%
+  bind_cols(resid_recip=resid(mod_recip)) -> mod_recip_residDF
 
 
 ### Test assumptions (using log-transform as an example)
@@ -191,7 +194,7 @@ augment(mod_recip)[,c("trmt","recip_value",".resid")] %>%
 # Graphically
 #hard-coded
 mod_log_residDF %>%
-  ggplot(aes(sample=resid)) +
+  ggplot(aes(sample=resid_log)) +
   stat_qq(color="steelblue") + 
   stat_qq_line() +
   labs(x="Theoretical quantiles",
@@ -202,11 +205,11 @@ mod_log_residDF %>%
 #highly skewed tail; appears non-normal
 
 #using function
-qqplotter(mod_log_residDF,resid)
+qqplotter(mod_log_residDF,resid_log)
 
 # Statistically
 mod_log_residDF %>%
-  shapiro_test(resid) 
+  shapiro_test(resid_log) 
 #p=0.0054; non-normal
 
 
@@ -219,20 +222,6 @@ plot(mod_log,which=3)
 mod_log_residDF %>%
   levene_test(log_value~trmt)
 #equal variance
-
-
-### Create function to build DF of transformed values and residuals-----------------------------------------
-data_transformer<-function(data,x,y,func){
-  ind<-enquo(x)
-  data %>%
-    mutate(trans_value=func({{y}})) %>%
-    lm(trans_value~ind,.) %>%
-    augment() %>%
-    select(ind,trans_value,resid=".resid") -> sampDF_trans
-  sampDF_trans
-}
-
-data_transformer(sampDF,trmt,value,log)
 
 
 
