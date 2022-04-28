@@ -55,7 +55,7 @@ tukey_hsd(mod) %>%
 
 ### Create function to graph Tukey HSD results----------------------------------------------------
 tukey_plotter<-function(model){
-  tukey_hsd(mod) %>%
+  tukey_hsd(model) %>%
     select(-null.value) %>%
     mutate(comp=paste(group1,group2,sep="-"),
            comp=fct_rev(fct_inorder(comp))) %>%

@@ -102,13 +102,13 @@ barplotter(sampDF,trmt,value)
 ### Pull residuals
 #create and store model
 mod<-lm(value~trmt,data=sampDF)
-mod_residDF<-bind_cols(sampDF,resid=resid(mod))
 
 
 ### Test normality assumption
 ## Graphically
-mod_residDF %>%
-  ggplot(aes(sample=resid)) +
+resid(mod) %>%
+  as_tibble() %>%
+  ggplot(aes(sample=value)) +
   stat_qq(color="steelblue") + 
   stat_qq_line() +
   labs(x="Theoretical quantiles",
@@ -119,8 +119,7 @@ mod_residDF %>%
 #many outliers at the tails
 
 ## Statistically
-mod_residDF %>%
-  shapiro_test(resid) 
+shapiro_test(resid(mod))
 #p=0.0235; non-normal
 
 
@@ -130,16 +129,16 @@ plot(mod,which=3)
 #line is clearly not horizontal, so variance unequal
 
 ## Statistically
-mod_residDF %>%
-  levene_test(value~trmt)
+levene_test(sampDF,value~trmt)
 #p=0.0113; unequal variance
 
 
 ### Create functions to draw qq plot in ggplot2------------------------------------------------------------------
 ## Draw qqplot in ggplot2
-qqplotter<-function(df,errors){
-df %>%
-  ggplot(aes(sample={{errors}})) +
+qqplotter<-function(model){
+resid(model) %>%
+  as_tibble() %>%
+  ggplot(aes(sample=value)) +
   stat_qq(color="steelblue") + 
   stat_qq_line() +
   labs(x="Theoretical quantiles",
@@ -149,7 +148,7 @@ df %>%
         axis.title=element_text(size=13))
 }
 
-qqplotter(mod_residDF,resid)
+qqplotter(mod)
 
 #### Data transformations & ANOVA assumptions===========================================================
 ### Transform data
@@ -162,10 +161,6 @@ sampDF %>%
 sampDF_log %>%
   lm(log_value~trmt,.) -> mod_log
 
-# Append residuals to new DF
-sampDF_log %>%
-  bind_cols(resid_log=resid(mod_log)) -> mod_log_residDF
-
 
 ## Square-root
 sampDF %>%
@@ -173,9 +168,6 @@ sampDF %>%
 
 sampDF_sqrt %>%
   lm(sqrt_value~trmt,.) -> mod_sqrt
-
-sampDF_sqrt %>%
-  bind_cols(resid_sqrt=resid(mod_sqrt)) -> mod_sqrt_residDF
 
 
 ## Reciprocal
@@ -185,16 +177,14 @@ sampDF %>%
 sampDF_recip %>%
   lm(recip_value~trmt,.) -> mod_recip
 
-sampDF_recip %>%
-  bind_cols(resid_recip=resid(mod_recip)) -> mod_recip_residDF
-
 
 ### Test assumptions (using log-transform as an example)
 ## Normality
 # Graphically
 #hard-coded
-mod_log_residDF %>%
-  ggplot(aes(sample=resid_log)) +
+resid(mod_log) %>%
+  as_tibble() %>%
+  ggplot(aes(sample=value)) +
   stat_qq(color="steelblue") + 
   stat_qq_line() +
   labs(x="Theoretical quantiles",
@@ -205,11 +195,10 @@ mod_log_residDF %>%
 #highly skewed tail; appears non-normal
 
 #using function
-qqplotter(mod_log_residDF,resid_log)
+qqplotter(mod_log)
 
 # Statistically
-mod_log_residDF %>%
-  shapiro_test(resid_log) 
+shapiro_test(resid(mod_log)) 
 #p=0.0054; non-normal
 
 
@@ -219,10 +208,5 @@ plot(mod_log,which=3)
 #non horizontal; appears unequal
 
 # Statistically
-mod_log_residDF %>%
-  levene_test(log_value~trmt)
+levene_test(sampDF_log,log_value~trmt)
 #equal variance
-
-
-
-

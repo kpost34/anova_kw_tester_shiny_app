@@ -53,16 +53,17 @@ barplotter<-function(df,x,y){
 
 
 ## Function to draw qqplot in ggplot2
-qqplotter<-function(df,resid){
-  mod_residDF %>%
-    ggplot(aes(sample={{resid}})) +
-    stat_qq(color="steelblue") + 
-    stat_qq_line() +
-    labs(x="Theoretical quantiles",
-         y="Standardized residuals") +
-    theme_bw() +
-    theme(axis.text=element_text(size=12),
-          axis.title=element_text(size=13))
+qqplotter<-function(model){
+  resid(model) %>%
+  as_tibble() %>%
+  ggplot(aes(sample=value)) +
+  stat_qq(color="steelblue") + 
+  stat_qq_line() +
+  labs(x="Theoretical quantiles",
+       y="Standardized residuals") +
+  theme_bw() +
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=13))
 }
 
 
@@ -80,7 +81,7 @@ anova_tabler<-function(model){
 
 ## Function to graph Tukey HSD results
 tukey_plotter<-function(model){
-  tukey_hsd(mod) %>%
+  tukey_hsd(model) %>%
     select(-null.value) %>%
     mutate(comp=paste(group1,group2,sep="-"),
            comp=fct_rev(fct_inorder(comp))) %>%
