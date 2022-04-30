@@ -15,8 +15,8 @@ source(here("anova_kw_tester_app","anova_kw_tester_app_functions.R"))
 stat_list<-list(n=length,min=min,median=median,mean=mean,max=max,sd=sd,se=function(x) sd(x)/sqrt(length(x)))
 
 
-ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",
-  tabPanel("Data Input & Exploration",
+ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
+  tabPanel("Data Input & Exploration",value="data_input",
     sidebarLayout(
       sidebarPanel(width=3,
         radioButtons("dataSource_radio","Upload or simulate data?",
@@ -37,7 +37,7 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",
       )
     )
   ),
-  tabPanel("ANOVA assumptions",
+  tabPanel("ANOVA assumptions",value="ANOVA_assump",
     sidebarLayout(
       sidebarPanel(width=3,
         checkboxGroupInput("residNormTest_check","Are residuals normally distributed?",
@@ -53,7 +53,7 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",
       )
     ),
   ),
-  tabPanel("Run ANOVA",
+  tabPanel("Run ANOVA",value="run_ANOVA",
     sidebarLayout(
       sidebarPanel(width=3,
        checkboxInput("anovaTest_check","Run ANOVA"),
@@ -61,17 +61,29 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",
        checkboxGroupInput("tukeyTest_check","Tukey HSD post-hoc test",
                           choices=c("Run test","Visualize results"))
       ),
-      mainPanel(),
+      mainPanel(
+        tableOutput("raw_anova_table"),
+        tableOutput("raw_tukey_table"),
+        plotOutput("raw_tukey_plot")
+      )
     )
   ),
-  tabPanel("Run Kruskal-Wallis",
+  tabPanel("Run Kruskal-Wallis",value="run_KW",
     sidebarLayout(
       sidebarPanel(width=3,
+        checkboxInput("reviewViz_check","Visualize results"),
+        checkboxInput("kruskalTest_check","Run Kruskal-Wallis Test"),
+        checkboxInput("dunnTest_check","Run Dunn post-hoc test")
       ),
-      mainPanel(),
+      mainPanel(
+        plotOutput("review_boxplot"),
+        tableOutput("raw_kw_table"),
+        tableOutput("raw_dunn_table")
+      )
     )
   )
 )
+
 
 
 
@@ -130,41 +142,88 @@ server<-function(input,output,session){
   
 #### Tab 2: ANOVA Assumptions--------------------------------------------------------------
   ### Build model
-  ## build model if tab selected
+  ## build model if one of two tabs selected
   mod<-reactive({
-    req([insert code])
-    
+    req(input$mainTabs %in% c("ANOVA_assump","run_ANOVA"))
+    mod<-lm(value~trmt,data=data())
   })
+  
   
   ### Normal distribution of residuals
   ## QQ plot
-  
+  output$raw_qqplot<-renderPlot({
+    req(input$residNormTest_check=="Quantile-quantile plot")
+    qqplotter(mod())
+  })
+    
   
   ## Shapiro-Wilk test
+  output$raw_shapiro<-renderTable({
+    req(input$residNormTest_check=="Shapiro-Wilk normality test")
+    shapiro_test(resid(mod()))
+  })
+  
   
   ### Equal variance
   ## Scale-location plot
+  output$raw_scale_loc_plot<-renderPlot({
+    req(input$equalVarTest_check=="Scale-location plot")
+    plot(mod(),which=3)
+  })
+  
   
   ## Levene's test
-
-  plotOutput("raw_qqplot"),
-  tableOutput("raw_shapiro"),
-  plotOutput("raw_scale_loc_plot"),
-  tableOutput("raw_levene")
+  output$raw_levene<-renderTable({
+    req(input$equalVarTest_check=="Levene's test")
+    levene_test(data(),value~trmt)
+  })
   
 #### Tab 3: Run ANOVA----------------------------------------------------------------------
-  
+  ### Perform ANOVA
+  output$raw_anova_table<-renderTable({
+    req(input$anovaTest_check)
+    anova_tabler(mod())
+  })
 
+  ### Run Tukey HSD tests
+  output$raw_tukey_table<-renderTable({
+    req(input$tukeyTest_check=="Run test")
+    tukey_hsd(mod()) %>%
+      select(-null.value)
+  })
+  
+  ### Graph Tukey HSD test results
+  output$raw_tukey_plot<-renderPlot({
+    req(input$tukeyTest_check=="Visualize results")
+    tukey_plotter(mod())
+  })
 
 
 #### Tab 4: Run Kruskal-Wallis-------------------------------------------------------------
+  ### Visualize data
+  output$review_boxplot<-renderPlot({
+    req(input$reviewViz_check)
+    boxplotter(data(),trmt,value)
+  })
   
-
+  ### Run Kruskal-Wallis Test
+  output$raw_kw_table<-renderTable({
+    req(input$kruskalTest_check)
+    kruskal_test(data(),value~trmt)
+  })
   
+  ### Run Dunn post-hoc test
+  output$raw_dunn_table<-renderTable({
+    req(input$dunnTest_check)
+    dunn_test(data(),value~trmt)
+  })
 }
 shinyApp(ui,server)
 
 
+
+#NEXT STEPS
+#add titles to tables/plots
 
 
 
