@@ -9,12 +9,15 @@ library(rstatix)
 
 ### I. Functions for testing ANOVA assumptions and transforming data======================================
 ## Function to make tibble from simulated data
-samp_maker<-function(n=10){
+samp_maker<-function(g=3,n=10){
   tibble(
     A=rnorm(n,10,1),
     B=rnorm(n,14,3),
-    C=rnorm(n,18,5)
+    C=rnorm(n,18,5),
+    D=rnorm(n,15,0.5),
+    E=rnorm(n,20,3)
   ) %>% 
+    select(1:g) %>%
     pivot_longer(cols=everything(),names_to="trmt",values_to="value")
 }
 

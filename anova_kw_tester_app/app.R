@@ -23,8 +23,12 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
                      selected=character(0),
                      choices=c("Upload data"="file",
                                "Simulate data"="simulate")),
-        uiOutput("data_upload"),
-        uiOutput("data_sim"),
+        splitLayout(
+          uiOutput("data_upload"),
+          uiOutput("data_upload_info")
+        ),
+        uiOutput("data_g_sim"),
+        uiOutput("data_n_sim"),
         checkboxGroupInput("initialViz_check", "Data visualization",
                            choices=c("Table"="table",
                                      "Boxplot"="boxplot",
@@ -91,30 +95,73 @@ server<-function(input,output,session){
   
 #### Tab 1: Data Input & Exploration-------------------------------------------------------
   ### Dynamic UI
-  ## Dynamic UI to display file upload box if 'Upload data' selected
+  ## Dynamic UI to display file upload box and info button if 'Upload data' selected
   output$data_upload<-renderUI({
     req(input$dataSource_radio=="file")
       fileInput("upload_file","Upload a data file",accept=c(".csv",".xls",".xlsx"))
   })
   
-  ## Dynamic UI to display n size for simulated data if selected
-  output$data_sim<-renderUI({
+  output$data_upload_info<-renderUI({
+    req(input$dataSource_radio=="file")
+      actionButton("info_file",HTML("<em> i </em>"),style='margin-top:25px',class="btn btn-primary")
+  })
+  
+  
+  ## Dynamic UI to display g and n sizes for simulated data if selected
+  output$data_g_sim<-renderUI({
+    req(input$dataSource_radio=="simulate")
+    numericInput("g_sim","Select the number of groups",value=3,min=3,max=5)
+  })
+  
+  output$data_n_sim<-renderUI({
     req(input$dataSource_radio=="simulate")
     numericInput("n_sim","Choose sample size per group",value=10,min=5,max=20)
   })
   
+  
+  ### Display modal if info button pressed
+  observeEvent(input$info_file,{
+    showModal(modalDialog(
+      title="Note when uploading files",
+      footer=modalButton("Close"),
+      HTML(
+        paste0("Data must...",'<br/>',
+          "1) be saved as .csv., .xls, or .xlsx",'<br/>',
+          "2) contain 3, 4, or 5 groups",'<br/>',
+          "3) be arranged in long format with group names in first row"
+        )
+      )
+    ))  
+  }
+  )
+  
   ### Create reactive data object either via uploaded or simulated data
   data<-reactive({
-    #if(input$upload_file)
-      #ext<-tools::file_ext(input$upload_file$name)
-      #switch(ext,
-      #  csv=vroom::vroom(input$upload_file$datapath,delim=","),
-      #  xls=read_xls(input$upload_file$datapath),
-      #  xlsx=read_xlsx(input$upload_file$datapath),
-        #validate("Invalid file; Please upload a .csv, .xls, or .xlsx file")
-     # )
-    if(input$dataSource_radio=="simulate"){
-      samp_maker(input$n_sim)
+    #set up conditional...if file is selected and a file is chosen then
+    if(input$dataSource_radio=="file"){
+      req(input$upload_file)
+      #R picks out the file extension
+      ext<-tools::file_ext(input$upload_file$name)
+      #switches to function based on ext 
+      switch(ext,
+        csv=vroom::vroom(input$upload_file$datapath,delim=","),
+        xls=read_xls(input$upload_file$datapath),
+        xlsx=read_xlsx(input$upload_file$datapath),
+        #error thrown if incorrect file type selected
+        validate("Invalid file; Please upload a .csv, .xls, or .xlsx file")
+      ) %>%
+        #once file type is correct, it pivots to long format
+        pivot_longer(cols=everything(),names_to="trmt",values_to="value")
+    }
+    #but...if simulate is selected then data are simulated using function samp_maker
+    else if(input$dataSource_radio=="simulate"){
+      if(!between(input$g_sim,3,5)) {
+        validate("select either 3, 4, or 5 groups")
+      }
+      if(!between(input$n_sim,5,20)) {
+        validate("sample size cannot be fewer than 5 or greater than 20")
+      }
+      samp_maker(input$g_sim,input$n_sim)
     }
   })
 
@@ -221,14 +268,21 @@ server<-function(input,output,session){
 shinyApp(ui,server)
 
 
+#DONE
+#data upload works
+#user can choose between simulated and actual data
+#samp_maker more has g argument for number of groups in addition to n arg for sample size per group
+#error messages if g or n not in desired ranges
+#added info button for file uploads
+
 
 #NEXT STEPS
 #add titles to tables/plots
-
+#integrating data transformations
+#style
 
 
 #Future steps
-#Flesh out server function
 #Conditional output (a button/modal) for 1) format of data upload, 2) giving the user the option to interpret plots/stats
 #Plot labels and legend need to be bigger
 

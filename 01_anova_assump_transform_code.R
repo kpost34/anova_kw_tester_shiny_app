@@ -18,16 +18,19 @@ tibble(A,B,C) %>%
 
 
 ### Create function to make tibble-------------------------------------------------------------------------
-samp_maker<-function(n=10){
+samp_maker<-function(g=3,n=10){
   tibble(
     A=rnorm(n,10,1),
     B=rnorm(n,14,3),
-    C=rnorm(n,18,5)
+    C=rnorm(n,18,5),
+    D=rnorm(n,15,0.5),
+    E=rnorm(n,20,3)
   ) %>% 
+  select(1:g) %>%
     pivot_longer(cols=everything(),names_to="trmt",values_to="value")
 }
 
-
+samp_maker(3,10)
 #### Exploratory data analysis============================================================================
 #create list for summary tables
 stat_list<-list(n=length,min=min,median=median,mean=mean,max=max,sd=sd,se=function(x) sd(x)/sqrt(length(x)))
