@@ -128,7 +128,7 @@ shapiro_test(resid(mod))
 
 ### Test equal variance assumption
 ## Graphically 
-plot(mod,which=3)
+plot(mod,which=3,caption=NULL)
 #line is clearly not horizontal, so variance unequal
 
 ## Statistically

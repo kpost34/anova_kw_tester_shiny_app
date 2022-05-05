@@ -35,8 +35,13 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
                                      "Bar plot"="barplot"))
       ),
       mainPanel(
+        htmlOutput("raw_table_title"),
         tableOutput("raw_table"),
+        br(),
+        htmlOutput("raw_boxplot_title"),
         plotOutput("raw_boxplot"),
+        br(),
+        htmlOutput("raw_barplot_title"),
         plotOutput("raw_barplot")
       )
     )
@@ -50,9 +55,16 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
                            choices=c("Scale-location plot","Levene's test"))
       ),
       mainPanel(
+        htmlOutput("raw_qqplot_title"),
         plotOutput("raw_qqplot"),
+        br(),
+        htmlOutput("raw_shapiro_title"),
         tableOutput("raw_shapiro"),
+        br(),
+        htmlOutput("raw_scale_loc_plot_title"),
         plotOutput("raw_scale_loc_plot"),
+        br(),
+        htmlOutput("raw_levene_title"),
         tableOutput("raw_levene")
       )
     ),
@@ -66,8 +78,13 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
                           choices=c("Run test","Visualize results"))
       ),
       mainPanel(
+        htmlOutput("raw_anova_table_title"),
         tableOutput("raw_anova_table"),
+        br(),
+        htmlOutput("raw_tukey_table_title"),
         tableOutput("raw_tukey_table"),
+        br(),
+        htmlOutput("raw_tukey_plot_title"),
         plotOutput("raw_tukey_plot")
       )
     )
@@ -80,8 +97,13 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
         checkboxInput("dunnTest_check","Run Dunn post-hoc test")
       ),
       mainPanel(
+        htmlOutput("review_boxplot_title"),
         plotOutput("review_boxplot"),
+        br(),
+        htmlOutput("raw_kw_table_title"),
         tableOutput("raw_kw_table"),
+        br(),
+        htmlOutput("raw_dunn_table_title"),
         tableOutput("raw_dunn_table")
       )
     )
@@ -126,7 +148,7 @@ server<-function(input,output,session){
       footer=modalButton("Close"),
       HTML(
         paste0("Data must...",'<br/>',
-          "1) be saved as .csv., .xls, or .xlsx",'<br/>',
+          "1) be saved as a .csv., .xls, or .xlsx file",'<br/>',
           "2) contain 3, 4, or 5 groups",'<br/>',
           "3) be arranged in long format with group names in first row"
         )
@@ -166,6 +188,12 @@ server<-function(input,output,session){
   })
 
   ### Data visualizations
+  ## Display summary table title
+  output$raw_table_title<-renderText({
+    req(input$initialViz_check=="table")
+    paste("<h4>Summary Statistics</h4>")
+  })
+  
   ## Display summary table
   output$raw_table<-renderTable({
     req(input$initialViz_check=="table")
@@ -174,10 +202,22 @@ server<-function(input,output,session){
         summarize(across(value,stat_list,.names="{.fn}"))
   })
   
+  ## Display boxplot title
+  output$raw_boxplot_title<-renderText({
+    req(input$initialViz_check=="boxplot")
+    paste("<h4>Boxplot</h4>")
+  })
+  
   ## Display boxplot
   output$raw_boxplot<-renderPlot({
     req(input$initialViz_check=="boxplot")
     boxplotter(data(),trmt,value)
+  })
+  
+  ## Display bar plot title
+  output$raw_barplot_title<-renderText({
+    req(input$initialViz_check=="barplot")
+    paste("<h4>Bar Plot</h4>")
   })
   
   ## Display bar plot
@@ -197,27 +237,51 @@ server<-function(input,output,session){
   
   
   ### Normal distribution of residuals
+  ## QQ plot title
+  output$raw_qqplot_title<-renderText({
+    req(input$residNormTest_check=="Quantile-quantile plot")
+    paste("<h4>Quantitle-quantile Plot</h4>")
+  })
+  
   ## QQ plot
   output$raw_qqplot<-renderPlot({
     req(input$residNormTest_check=="Quantile-quantile plot")
     qqplotter(mod())
   })
     
+  ## Shapiro-Wilk test title
+  output$raw_shapiro_title<-renderText({
+    req(input$residNormTest_check=="Shapiro-Wilk normality test")
+    paste("<h4>Shapiro-Wilk Test of Normality</h4>")
+  })
   
   ## Shapiro-Wilk test
   output$raw_shapiro<-renderTable({
     req(input$residNormTest_check=="Shapiro-Wilk normality test")
-    shapiro_test(resid(mod()))
+    shapiro_test(resid(mod())) %>% 
+      mutate(variable="residuals") %>%
+      rename(p="p.value")
   })
   
   
   ### Equal variance
+  ## Scale-location plot title
+  output$raw_scale_loc_plot_title<-renderText({
+    req(input$equalVarTest_check=="Scale-location plot")
+    paste("<h4>Scale-location Plot</h4>")
+  })
+  
   ## Scale-location plot
   output$raw_scale_loc_plot<-renderPlot({
     req(input$equalVarTest_check=="Scale-location plot")
-    plot(mod(),which=3)
+    plot(mod(),which=3,caption=NULL)
   })
   
+  ## Levene's test title
+  output$raw_levene_title<-renderText({
+    req(input$equalVarTest_check=="Levene's test")
+    paste("<h4>Levene's Test</h4>")
+  })
   
   ## Levene's test
   output$raw_levene<-renderTable({
@@ -226,17 +290,35 @@ server<-function(input,output,session){
   })
   
 #### Tab 3: Run ANOVA----------------------------------------------------------------------
+  ### Display ANOVA table title
+  output$raw_anova_table_title<-renderText({
+    req(input$anovaTest_check)
+    paste("<h4>ANOVA Table</h4>")
+  })
+  
   ### Perform ANOVA
   output$raw_anova_table<-renderTable({
     req(input$anovaTest_check)
     anova_tabler(mod())
   })
 
+  ### Display title of Tukey test summary table
+  output$raw_tukey_table_title<-renderText({
+    req(input$tukeyTest_check=="Run test")
+    paste("<h4>Summary of Tukey HSD Tests</h4>")
+  })
+  
   ### Run Tukey HSD tests
   output$raw_tukey_table<-renderTable({
     req(input$tukeyTest_check=="Run test")
     tukey_hsd(mod()) %>%
-      select(-null.value)
+      select(-c(null.value,term))
+  })
+  
+  ### Display title of graphical Tukey HSD test results
+  output$raw_tukey_plot_title<-renderText({
+    req(input$tukeyTest_check=="Visualize results")
+    paste("<h4>Multiple Comparisons Between All Pairs (Tukey)</h4>")
   })
   
   ### Graph Tukey HSD test results
@@ -247,44 +329,55 @@ server<-function(input,output,session){
 
 
 #### Tab 4: Run Kruskal-Wallis-------------------------------------------------------------
+  ### Display title of boxplot
+  output$review_boxplot_title<-renderText({
+    req(input$reviewViz_check)
+    paste("<h4>Boxplot</h4>")
+  })
+  
   ### Visualize data
   output$review_boxplot<-renderPlot({
     req(input$reviewViz_check)
     boxplotter(data(),trmt,value)
   })
   
+  ## Display Kruskal-Wallis Table Title
+  output$raw_kw_table_title<-renderText({
+    req(input$kruskalTest_check)
+    paste("<h4>Kruskal-Wallis Test Results</h4>")
+  })
+  
   ### Run Kruskal-Wallis Test
   output$raw_kw_table<-renderTable({
     req(input$kruskalTest_check)
-    kruskal_test(data(),value~trmt)
+    kruskal_test(data(),value~trmt) %>%
+      select(-c(`.y.`,method))
+  })
+  
+  ### Display Dunn post-hoc test results title
+  output$raw_dunn_table_title<-renderText({
+    req(input$dunnTest_check)
+    paste("<h4>Dunn Test Results</h4>")
   })
   
   ### Run Dunn post-hoc test
   output$raw_dunn_table<-renderTable({
     req(input$dunnTest_check)
-    dunn_test(data(),value~trmt)
+    dunn_test(data(),value~trmt) %>%
+      select(-`.y.`)
   })
 }
 shinyApp(ui,server)
 
 
 #DONE
-#data upload works
-#user can choose between simulated and actual data
-#samp_maker more has g argument for number of groups in addition to n arg for sample size per group
-#error messages if g or n not in desired ranges
-#added info button for file uploads
+
 
 
 #NEXT STEPS
-#add titles to tables/plots
+#require ANOVA table to be run/present to display Tukey results--same for KW and Dunn tests
+#format table outputs
 #integrating data transformations
 #style
-
-
-#Future steps
-#Conditional output (a button/modal) for 1) format of data upload, 2) giving the user the option to interpret plots/stats
-#Plot labels and legend need to be bigger
-
-
+#make plot labels and legend larger
 
