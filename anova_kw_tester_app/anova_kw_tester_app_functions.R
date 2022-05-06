@@ -70,6 +70,12 @@ qqplotter<-function(model){
 }
 
 
+## Function to calculate reciprocal value
+recip<-function(x) {
+  1/x
+}
+
+
 
 ### II. Functions for performing ANOVA and post-hoc Tukey HSD tests======================================
 ## Function to build ANOVA table

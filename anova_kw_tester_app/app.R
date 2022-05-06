@@ -69,13 +69,25 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
       )
     ),
   ),
+  tabPanel("Data Transformation",value="data_trans",
+    sidebarLayout(
+      sidebarPanel(width=3,
+        selectInput("transform_select","How would you like to transform your data?",
+                    choices=c("Log"="log",
+                              "Square-root"="sqrt",
+                              "Reciprocal"="recip")
+        ),
+        uiOutput("")
+        
+      )
+           )
+  
+  
   tabPanel("Run ANOVA",value="run_ANOVA",
     sidebarLayout(
       sidebarPanel(width=3,
        checkboxInput("anovaTest_check","Run ANOVA"),
-       #note: placeholder for dynamic UI--Tukey should only appear after ANOVA run
-       checkboxGroupInput("tukeyTest_check","Tukey HSD post-hoc test",
-                          choices=c("Run test","Visualize results"))
+       uiOutput("tukeyHSD_check")
       ),
       mainPanel(
         htmlOutput("raw_anova_table_title"),
@@ -94,7 +106,7 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
       sidebarPanel(width=3,
         checkboxInput("reviewViz_check","Visualize results"),
         checkboxInput("kruskalTest_check","Run Kruskal-Wallis Test"),
-        checkboxInput("dunnTest_check","Run Dunn post-hoc test")
+        uiOutput("dunnTest")
       ),
       mainPanel(
         htmlOutput("review_boxplot_title"),
@@ -302,6 +314,14 @@ server<-function(input,output,session){
     anova_tabler(mod())
   })
 
+  ### Dynamically display UI for Tukey HSD Test
+  output$tukeyHSD_check<-renderUI({
+    req(input$anovaTest_check)
+    checkboxGroupInput("tukeyTest_check","Tukey HSD post-hoc test",
+                       choices=c("Run test","Visualize results"))
+  })
+  
+  
   ### Display title of Tukey test summary table
   output$raw_tukey_table_title<-renderText({
     req(input$tukeyTest_check=="Run test")
@@ -354,6 +374,13 @@ server<-function(input,output,session){
       select(-c(`.y.`,method))
   })
   
+  ### Dynamically display Dunn test input
+  output$dunnTest<-renderUI({
+    req(input$kruskalTest_check)
+    checkboxInput("dunnTest_check","Run Dunn post-hoc test")
+  })
+  
+
   ### Display Dunn post-hoc test results title
   output$raw_dunn_table_title<-renderText({
     req(input$dunnTest_check)
@@ -371,13 +398,15 @@ shinyApp(ui,server)
 
 
 #DONE
+#require ANOVA table to be run/present to display Tukey results--same for KW and Dunn tests--dynamic UI
+#added reciprocal value function
+#working on data transformation tab
 
 
 
 #NEXT STEPS
-#require ANOVA table to be run/present to display Tukey results--same for KW and Dunn tests
-#format table outputs
 #integrating data transformations
 #style
 #make plot labels and legend larger
+#fix Tukey plot so that geom_text more readable
 

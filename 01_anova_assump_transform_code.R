@@ -213,3 +213,11 @@ plot(mod_log,which=3)
 # Statistically
 levene_test(sampDF_log,log_value~trmt)
 #equal variance
+
+
+### Create function to calculate reciprocal----------------------------------------------------------------
+recip<-function(x) {
+  1/x
+}
+
+
