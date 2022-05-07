@@ -67,22 +67,21 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
         htmlOutput("raw_levene_title"),
         tableOutput("raw_levene")
       )
-    ),
+    )
   ),
   tabPanel("Data Transformation",value="data_trans",
     sidebarLayout(
       sidebarPanel(width=3,
-        selectInput("transform_select","How would you like to transform your data?",
-                    choices=c("Log"="log",
-                              "Square-root"="sqrt",
-                              "Reciprocal"="recip")
-        ),
-        uiOutput("")
-        
-      )
-           )
-  
-  
+        checkboxInput("trans_check","Transform data?"),
+        uiOutput("data_transform"),
+        br(),
+        htmlOutput("trans_assump"),
+        uiOutput("trans_residNormTest"),
+        uiOutput("trans_equalVarTest")
+      ),
+      mainPanel()
+    )
+  ),
   tabPanel("Run ANOVA",value="run_ANOVA",
     sidebarLayout(
       sidebarPanel(width=3,
@@ -301,7 +300,37 @@ server<-function(input,output,session){
     levene_test(data(),value~trmt)
   })
   
-#### Tab 3: Run ANOVA----------------------------------------------------------------------
+
+#### Tab 3: Data Transformations----------------------------------------------------------
+  ### Dynamically display UI for data transformation
+  output$data_transform<-renderUI({
+    req(input$trans_check)
+    selectInput("trans_select","How would you like to transform your data?",
+      selected=NULL, choices=c("",
+                              "Log"="log",
+                              "Square-root"="sqrt",
+                              "Reciprocal"="recip"))
+  })
+  
+  output$trans_assump<-renderText({
+    req(input$trans_select)
+    paste("<h4>Test ANOVA Assumptions</h4>")
+  })
+  
+  output$trans_residNormTest<-renderUI({
+    req(input$trans_select)
+    checkboxGroupInput("trans_residNormTest_check","Are residuals normally distributed?",
+                       choices=c("Quantile-quantile plot","Shapiro-Wilk normality test"))
+  })
+  
+  output$trans_equalVarTest<-renderUI({
+    req(input$trans_select)
+    checkboxGroupInput("trans_equalVarTest_check","Do within-group residuals have equal variance across treatment groups?",
+                       choices=c("Scale-location plot","Levene's test"))
+  })
+  
+  
+#### Tab 4: Run ANOVA----------------------------------------------------------------------
   ### Display ANOVA table title
   output$raw_anova_table_title<-renderText({
     req(input$anovaTest_check)
@@ -348,7 +377,7 @@ server<-function(input,output,session){
   })
 
 
-#### Tab 4: Run Kruskal-Wallis-------------------------------------------------------------
+#### Tab 5: Run Kruskal-Wallis-------------------------------------------------------------
   ### Display title of boxplot
   output$review_boxplot_title<-renderText({
     req(input$reviewViz_check)
@@ -398,9 +427,6 @@ shinyApp(ui,server)
 
 
 #DONE
-#require ANOVA table to be run/present to display Tukey results--same for KW and Dunn tests--dynamic UI
-#added reciprocal value function
-#working on data transformation tab
 
 
 
