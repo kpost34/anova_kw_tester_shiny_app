@@ -14,8 +14,10 @@ source(here("anova_kw_tester_app","anova_kw_tester_app_functions.R"))
 #create list for summary tables
 stat_list<-list(n=length,min=min,median=median,mean=mean,max=max,sd=sd,se=function(x) sd(x)/sqrt(length(x)))
 
-
+##### UI=================================================================================
 ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
+  
+  #### UI: Tab 1-Data Input & Exploration----------------------------------------------
   tabPanel("Data Input & Exploration",value="data_input",
     sidebarLayout(
       sidebarPanel(width=3,
@@ -46,7 +48,9 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
       )
     )
   ),
-  tabPanel("ANOVA assumptions",value="ANOVA_assump",
+  
+  #### UI: Tab 2-ANOVA Assumptions--------------------------------------------------------
+  tabPanel("ANOVA Assumptions",value="ANOVA_assump",
     sidebarLayout(
       sidebarPanel(width=3,
         checkboxGroupInput("residNormTest_check","Are residuals normally distributed?",
@@ -69,6 +73,8 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
       )
     )
   ),
+  
+  #### UI: Tab 3-Data Transformation---------------------------------------------------------------------------------
   tabPanel("Data Transformation",value="data_trans",
     sidebarLayout(
       sidebarPanel(width=3,
@@ -79,9 +85,23 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
         uiOutput("trans_residNormTest"),
         uiOutput("trans_equalVarTest")
       ),
-      mainPanel()
+      mainPanel(
+        htmlOutput("trans_qqplot_title"),
+        plotOutput("trans_qqplot"),
+        br(),
+        htmlOutput("trans_shapiro_title"),
+        tableOutput("trans_shapiro"),
+        br(),
+        htmlOutput("trans_scale_loc_plot_title"),
+        plotOutput("trans_scale_loc_plot"),
+        br(),
+        htmlOutput("trans_levene_title"),
+        tableOutput("trans_levene")
+      )
     )
   ),
+  
+  #### UI: Tab 4-Run ANOVA-------------------------------------------------------------------------------
   tabPanel("Run ANOVA",value="run_ANOVA",
     sidebarLayout(
       sidebarPanel(width=3,
@@ -100,6 +120,8 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
       )
     )
   ),
+  
+  #### UI: Tab 5-Runk Kruskal-Wallis---------------------------------------------------------------
   tabPanel("Run Kruskal-Wallis",value="run_KW",
     sidebarLayout(
       sidebarPanel(width=3,
@@ -123,10 +145,10 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
 
 
 
-
+##### Server Function=====================================================================
 server<-function(input,output,session){
   
-#### Tab 1: Data Input & Exploration-------------------------------------------------------
+#### Server: Tab 1-Data Input & Exploration------------------------------------------------
   ### Dynamic UI
   ## Dynamic UI to display file upload box and info button if 'Upload data' selected
   output$data_upload<-renderUI({
@@ -238,12 +260,11 @@ server<-function(input,output,session){
   })
 
   
-#### Tab 2: ANOVA Assumptions--------------------------------------------------------------
-  ### Build model
-  ## build model if one of two tabs selected
+#### Server: Tab 2-ANOVA Assumptions--------------------------------------------------------------
+  ### Build model if one of two tabs selected
   mod<-reactive({
     req(input$mainTabs %in% c("ANOVA_assump","run_ANOVA"))
-    mod<-lm(value~trmt,data=data())
+    lm(value~trmt,data=data())
   })
   
   
@@ -301,36 +322,111 @@ server<-function(input,output,session){
   })
   
 
-#### Tab 3: Data Transformations----------------------------------------------------------
+#### Server: Tab 3-Data Transformation----------------------------------------------------------
   ### Dynamically display UI for data transformation
   output$data_transform<-renderUI({
     req(input$trans_check)
     selectInput("trans_select","How would you like to transform your data?",
-      selected=NULL, choices=c("",
-                              "Log"="log",
-                              "Square-root"="sqrt",
-                              "Reciprocal"="recip"))
+      selected=NULL, choices=c("","Log","Square_root","Reciprocal"))
   })
   
+  ### Create reactive objects for testing ANOVA assumptions
+  ## Transformed data object
+  trans_data<-reactive({
+    switch(input$trans_select,
+      Log=data() %>%
+        mutate(log_value=log(value)) -> trans_data,
+      Square_root=data %>%
+        mutate(sqrt_value=sqrt(value)) -> trans_data,
+      Reciprocal=data() %>%
+        mutate(receip_value=recip(value)) -> trans_data
+    )
+  })
+
+  ## Model using transformed data
+  #trans_mod<-reactive({
+  #  req(input$trans_check)
+ #   lm(value~trmt,data=trans_data())
+ # })
+  
+  
+  ### Dynamically display UI for testing ANOVA assumptions of transformed data
+  ## ANOVA Assumptions text
   output$trans_assump<-renderText({
-    req(input$trans_select)
+    req(input$trans_check,input$trans_select)
     paste("<h4>Test ANOVA Assumptions</h4>")
   })
   
+  ## Normality checkbox
   output$trans_residNormTest<-renderUI({
-    req(input$trans_select)
+    req(input$trans_check,input$trans_select)
     checkboxGroupInput("trans_residNormTest_check","Are residuals normally distributed?",
                        choices=c("Quantile-quantile plot","Shapiro-Wilk normality test"))
   })
   
+  ## Equal Variance checkbox
   output$trans_equalVarTest<-renderUI({
-    req(input$trans_select)
+    req(input$trans_check,input$trans_select)
     checkboxGroupInput("trans_equalVarTest_check","Do within-group residuals have equal variance across treatment groups?",
                        choices=c("Scale-location plot","Levene's test"))
   })
   
   
-#### Tab 4: Run ANOVA----------------------------------------------------------------------
+  ### Normal distribution of residuals
+  ## QQ plot title
+  output$trans_qqplot_title<-renderText({
+    req(input$trans_residNormTest_check=="Quantile-quantile plot")
+    paste("<h4>Quantitle-quantile Plot</h4>")
+  })
+  
+  ## QQ plot
+  output$trans_qqplot<-renderPlot({
+    req(input$trans_residNormTest_check=="Quantile-quantile plot")
+    qqplotter(trans_mod())
+  })
+  
+  ## Shapiro-Wilk test title
+  output$trans_shapiro_title<-renderText({
+    req(input$trans_residNormTest_check=="Shapiro-Wilk normality test")
+    paste("<h4>Shapiro-Wilk Test of Normality</h4>")
+  })
+  
+  ## Shapiro-Wilk test
+  output$trans_shapiro<-renderTable({
+    req(input$trans_residNormTest_check=="Shapiro-Wilk normality test")
+    shapiro_test(resid(trans_mod())) %>% 
+      mutate(variable="residuals") %>%
+      rename(p="p.value")
+  })
+  
+  
+  ### Equal variance
+  ## Scale-location plot title
+  output$trans_scale_loc_plot_title<-renderText({
+    req(input$trans_equalVarTest_check=="Scale-location plot")
+    paste("<h4>Scale-location Plot</h4>")
+  })
+  
+  ## Scale-location plot
+  output$trans_scale_loc_plot<-renderPlot({
+    req(input$trans_equalVarTest_check=="Scale-location plot")
+    plot(trans_mod(),which=3,caption=NULL)
+  })
+  
+  ## Levene's test title
+  output$trans_levene_title<-renderText({
+    req(input$trans_equalVarTest_check=="Levene's test")
+    paste("<h4>Levene's Test</h4>")
+  })
+  
+  ## Levene's test
+  output$trans_levene<-renderTable({
+    req(input$trans_equalVarTest_check=="Levene's test")
+    levene_test(trans_data(),value~trmt)
+  })
+  
+  
+#### Server: Tab 4-Run ANOVA----------------------------------------------------------------------
   ### Display ANOVA table title
   output$raw_anova_table_title<-renderText({
     req(input$anovaTest_check)
@@ -377,7 +473,7 @@ server<-function(input,output,session){
   })
 
 
-#### Tab 5: Run Kruskal-Wallis-------------------------------------------------------------
+#### Server: Tab 5-Run Kruskal-Wallis-------------------------------------------------------------
   ### Display title of boxplot
   output$review_boxplot_title<-renderText({
     req(input$reviewViz_check)
@@ -426,8 +522,13 @@ server<-function(input,output,session){
 shinyApp(ui,server)
 
 
-#DONE
 
+#DONE
+#added annotation to UI 
+
+
+#WORK IN PROGRESS
+#server-side of data transformation
 
 
 #NEXT STEPS

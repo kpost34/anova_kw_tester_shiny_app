@@ -31,6 +31,8 @@ samp_maker<-function(g=3,n=10){
 }
 
 samp_maker(3,10)
+
+
 #### Exploratory data analysis============================================================================
 #create list for summary tables
 stat_list<-list(n=length,min=min,median=median,mean=mean,max=max,sd=sd,se=function(x) sd(x)/sqrt(length(x)))
