@@ -105,8 +105,8 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
   tabPanel("Run ANOVA",value="run_ANOVA",
     sidebarLayout(
       sidebarPanel(width=3,
-       checkboxInput("anovaTest_check","Run ANOVA"),
-       uiOutput("tukeyHSD_check")
+        uiOutput("anovaTest"),
+        uiOutput("tukeyHSD_check")
       ),
       mainPanel(
         htmlOutput("raw_anova_table_title"),
@@ -327,27 +327,35 @@ server<-function(input,output,session){
   output$data_transform<-renderUI({
     req(input$trans_check)
     selectInput("trans_select","How would you like to transform your data?",
-      selected=NULL, choices=c("","Log","Square_root","Reciprocal"))
+      selected=NULL, choices=c("",
+                               "Log"="log",
+                               "Square-root"="sqrt",
+                               "Reciprocal"="recip"))
   })
   
   ### Create reactive objects for testing ANOVA assumptions
   ## Transformed data object
   trans_data<-reactive({
-    switch(input$trans_select,
-      Log=data() %>%
-        mutate(log_value=log(value)) -> trans_data,
-      Square_root=data %>%
-        mutate(sqrt_value=sqrt(value)) -> trans_data,
-      Reciprocal=data() %>%
-        mutate(receip_value=recip(value)) -> trans_data
-    )
+    if(input$trans_select=="log"){
+      data() %>%
+        mutate(trans_value=log(value))
+    }
+    else if(input$trans_select=="sqrt"){
+      data() %>%
+        mutate(trans_value=sqrt(value))
+    }
+    else if(input$trans_select=="recip"){
+      data() %>%
+        mutate(trans_value=recip(value))
+    }
   })
 
+
   ## Model using transformed data
-  #trans_mod<-reactive({
-  #  req(input$trans_check)
- #   lm(value~trmt,data=trans_data())
- # })
+  trans_mod<-reactive({
+    req(input$trans_check,input$trans_select)
+    lm(trans_value~trmt,data=trans_data())
+    })
   
   
   ### Dynamically display UI for testing ANOVA assumptions of transformed data
@@ -422,11 +430,23 @@ server<-function(input,output,session){
   ## Levene's test
   output$trans_levene<-renderTable({
     req(input$trans_equalVarTest_check=="Levene's test")
-    levene_test(trans_data(),value~trmt)
+    levene_test(trans_data(),trans_value~trmt)
   })
   
   
 #### Server: Tab 4-Run ANOVA----------------------------------------------------------------------
+  ### Display UI for running ANOVA dynamically
+  output$anovaTest<-renderUI({
+    if(input$trans_check & input$trans_select %in% c("log","sqrt","recip")){
+      radioButtons("anovaTest_radio","Run ANOVA with...",
+                    selected=character(0),
+                    choices=c("raw data"="raw",
+                              "transformed data"="trans"))
+    }
+      else{checkboxInput("anovaTest_check","Run ANOVA")}
+    })
+    
+  
   ### Display ANOVA table title
   output$raw_anova_table_title<-renderText({
     req(input$anovaTest_check)
@@ -524,16 +544,19 @@ shinyApp(ui,server)
 
 
 #DONE
-#added annotation to UI 
+#server-side of data transformation (could develop a more sophisticated function)
+#dynamic UI for which data to run ANOVA on
 
 
 #WORK IN PROGRESS
-#server-side of data transformation
+#server side of ANOVA model (raw vs untransformed data)
 
 
 #NEXT STEPS
-#integrating data transformations
 #style
 #make plot labels and legend larger
 #fix Tukey plot so that geom_text more readable
+#interactive plots--click/brushing and display
+#developer info page
+
 
