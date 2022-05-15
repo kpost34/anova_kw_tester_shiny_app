@@ -15,7 +15,7 @@ source(here("anova_kw_tester_app","anova_kw_tester_app_functions.R"))
 stat_list<-list(n=length,min=min,median=median,mean=mean,max=max,sd=sd,se=function(x) sd(x)/sqrt(length(x)))
 
 ##### UI=================================================================================
-ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
+ui<-navbarPage(strong("ANOVA & Kruskal-Wallis Tester"),id="mainTabs",
   
   #### UI: Tab 1-Data Input & Exploration----------------------------------------------
   tabPanel("Data Input & Exploration",value="data_input",
@@ -147,7 +147,20 @@ ui<-navbarPage("ANOVA & Kruskal-Wallis Tester",id="mainTabs",
         tableOutput("raw_dunn_table")
       )
     )
-  )
+  ),
+  
+  #### UI: Tab 6-Developer Information------------------------------------------------------------
+  tabPanel(strong("DEVELOPER"),value="devel",
+     p(h4(strong("Keith Post"))),
+     p("If you would like to see the code for this Shiny app, please visit my",
+       tags$a(href="https://github.com/kpost34/anova_kw_tester_shiny_app",
+              "Github repo"),
+       "for this project."
+     ),
+     p(tags$a(href="https://github.com/kpost34","GitHub Profile")),
+     p(tags$a(href="https://www.linkedin.com/in/keith-post","LinkedIn")),            
+    )
+  
 )
 
 
@@ -459,7 +472,15 @@ server<-function(input,output,session){
   ## ANOVA table title
   output$anova_table_title<-renderText({
     req(input$anovaTest_radio)
-    paste("<h4>ANOVA Table</h4>")
+    if(input$anovaTest_radio=="trans" & is.null(input$trans_select)){
+      validate("Transform data first on the previous tab")
+    }
+    else if(input$anovaTest_radio=="raw"){
+      paste("<h4>ANOVA Table</h4>")
+    }
+    else if(input$anovaTest_radio=="trans" & !is.null(input$trans_select)){
+      paste("<h4>ANOVA Table</h4>")
+    }
   })
   
   
@@ -477,8 +498,14 @@ server<-function(input,output,session){
   ### Tukey output
   ## Title of Tukey test summary table
   output$tukey_table_title<-renderText({
-    req(input$anovaTest_radio,
-        input$tukeyTest_check=="run")
+    req(input$tukeyTest_check=="run")
+    if(is.null(input$anovaTest_radio)){
+      validate("Run ANOVA before performing Tukey HSD tests")
+    }
+    if(is.null(input$trans_select)){
+      validate("Run ANOVA before performing Tukey HSD tests")
+    }
+    req(input$anovaTest_radio)
     paste("<h4>Summary of Tukey HSD Tests</h4>")
   })
   
@@ -499,8 +526,14 @@ server<-function(input,output,session){
   
   ## Title of graphical Tukey HSD test results
   output$tukey_plot_title<-renderText({
-    req(input$anovaTest_radio,
-        input$tukeyTest_check=="visualize")
+    req(input$tukeyTest_check=="visualize")
+    if(is.null(input$anovaTest_radio)){
+      validate("Run ANOVA before performing Tukey HSD tests")
+    }
+    if(is.null(input$trans_select)){
+      validate("Run ANOVA before performing Tukey HSD tests")
+    }
+    req(input$anovaTest_radio)
     paste("<h4>Multiple Comparisons Between All Pairs (Tukey)</h4>")
   })
   
@@ -558,18 +591,18 @@ server<-function(input,output,session){
   
   ### Run Dunn post-hoc test
   output$raw_dunn_table<-renderTable({
-    req(input$dunnTest_check)
+    if(req(input$dunnTest_check)==TRUE)
     dunn_test(data(),value~trmt) %>%
       select(-`.y.`)
   })
 }
 shinyApp(ui,server)
 
-#HAVE NOT COMMMITTED/PUSHED YET
+
 
 #DONE
-#re-imagined approach to tab 4--static UI + if/else if statements for output
-
+#added validate messages to Run ANOVA tab
+#added developer tab
 
 #WORK IN PROGRESS
 
@@ -582,6 +615,6 @@ shinyApp(ui,server)
 #make plot labels and legend larger
 #fix Tukey plot so that geom_text more readable
 #interactive plots--click/brushing and display
-#developer info page
+#annotate code
 
 
