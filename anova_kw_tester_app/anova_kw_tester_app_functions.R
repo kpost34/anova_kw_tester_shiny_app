@@ -31,11 +31,12 @@ boxplotter<-function(df,x,y){
     geom_point(aes(color={{x}}),position=position_jitterdodge()) +
     scale_color_viridis_d(begin=0,end=0.65) +
     theme_bw() +
-    theme(axis.text=element_text(size=12),
-          axis.title=element_text(size=13),
+    theme(axis.text=element_text(size=15),
+          axis.title=element_text(size=16),
           legend.position="bottom",
           legend.title=element_blank(),
-          legend.text=element_text(size=12))
+          legend.text=element_text(size=15)) +
+    guides(color=guide_legend(override.aes=list(size=5)))
 }
 
 
@@ -48,10 +49,12 @@ barplotter<-function(df,x,y){
     scale_fill_viridis_d(begin=0,end=0.65) +
     scale_y_continuous(expand=expansion(mult=c(0,0.05))) +
     theme_bw() +
-    theme(axis.text=element_text(size=12),
-          axis.title=element_text(size=13),
+    theme(axis.text=element_text(size=15),
+          axis.title=element_text(size=16),
+          legend.position="bottom",
           legend.title=element_blank(),
-          legend.text=element_text(size=12))
+          legend.text=element_text(size=15)) +
+    guides(color=guide_legend(override.aes=list(size=5)))
 }
 
 
@@ -65,8 +68,8 @@ qqplotter<-function(model){
   labs(x="Theoretical quantiles",
        y="Standardized residuals") +
   theme_bw() +
-  theme(axis.text=element_text(size=12),
-        axis.title=element_text(size=13))
+  theme(axis.text=element_text(size=15),
+        axis.title=element_text(size=16))
 }
 
 
@@ -98,13 +101,13 @@ tukey_plotter<-function(model){
     geom_linerange(aes(x=comp,ymin=conf.low,ymax=conf.high)) +
     geom_hline(yintercept=0,linetype=2,color="blue") +
     geom_point(aes(x=comp,y=estimate),size=3) +
-    geom_text(aes(x=comp,y=estimate,label=paste0("p=",p.adj)),nudge_x=.1) +
+    geom_text(aes(x=comp,y=estimate,label=paste0("p=",p.adj)),size=6,nudge_x=.2) +
     coord_flip() +
     labs(x="Mean comparison",
          y="Mean difference") +
     theme_bw() +
-    theme(axis.text=element_text(size=12),
-          axis.title=element_text(size=13))
+    theme(axis.text=element_text(size=15),
+          axis.title=element_text(size=16))
 }
 
 

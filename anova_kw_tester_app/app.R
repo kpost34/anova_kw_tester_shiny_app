@@ -133,7 +133,7 @@ ui<-navbarPage(strong("ANOVA & Kruskal-Wallis Tester"),id="mainTabs",
     sidebarLayout(
       sidebarPanel(width=3,
         checkboxInput("reviewViz_check","Visualize results"),
-        checkboxInput("kruskalTest_check","Run Kruskal-Wallis Test"),
+        checkboxInput("kruskalTest_check","Run Kruskal-Wallis Test (raw data only)"),
         uiOutput("dunnTest")
       ),
       mainPanel(
@@ -169,7 +169,7 @@ server<-function(input,output,session){
   
 #### Server: Tab 1-Data Input & Exploration------------------------------------------------
   ### Dynamic UI
-  ## Dynamic UI to display file upload box and info button if 'Upload data' selected
+  ## Display file upload box and info button if 'Upload data' selected
   output$data_upload<-renderUI({
     req(input$dataSource_radio=="file")
       fileInput("upload_file","Upload a data file",accept=c(".csv",".xls",".xlsx"))
@@ -181,7 +181,7 @@ server<-function(input,output,session){
   })
   
   
-  ## Dynamic UI to display g and n sizes for simulated data if selected
+  ## Display g and n size inputs for simulated data if selected
   output$data_g_sim<-renderUI({
     req(input$dataSource_radio=="simulate")
     numericInput("g_sim","Select the number of groups",value=3,min=3,max=5)
@@ -209,7 +209,9 @@ server<-function(input,output,session){
   }
   )
   
-  ### Create reactive data object either via uploaded or simulated data
+  
+  ### Object code
+  ## Create reactive data object either via uploaded or simulated data
   data<-reactive({
     #set up conditional...if file is selected and a file is chosen then
     if(input$dataSource_radio=="file"){
@@ -239,14 +241,17 @@ server<-function(input,output,session){
     }
   })
 
+  
   ### Data visualizations
-  ## Display summary table title
+  ## Summary table
+  # Summary table title 
   output$raw_table_title<-renderText({
+    #display if box checked
     req(input$initialViz_check=="table")
     paste("<h4>Summary Statistics</h4>")
   })
   
-  ## Display summary table
+  # Summary table body 
   output$raw_table<-renderTable({
     req(input$initialViz_check=="table")
     data() %>%
@@ -254,27 +259,33 @@ server<-function(input,output,session){
         summarize(across(value,stat_list,.names="{.fn}"))
   })
   
-  ## Display boxplot title
+  
+  ## Boxplot
+  # Boxplot title 
   output$raw_boxplot_title<-renderText({
     req(input$initialViz_check=="boxplot")
     paste("<h4>Boxplot</h4>")
   })
   
-  ## Display boxplot
+  ## Boxplot 
   output$raw_boxplot<-renderPlot({
     req(input$initialViz_check=="boxplot")
+    #custom boxplotter() function
     boxplotter(data(),trmt,value)
   })
   
-  ## Display bar plot title
+  
+  ## Bar plot
+  # Bar plot title 
   output$raw_barplot_title<-renderText({
     req(input$initialViz_check=="barplot")
     paste("<h4>Bar Plot</h4>")
   })
   
-  ## Display bar plot
+  # Bar plot 
   output$raw_barplot<-renderPlot({
     req(input$initialViz_check=="barplot")
+    #custom boxplotter() function
     barplotter(data(),trmt,value)
   })
 
@@ -288,25 +299,30 @@ server<-function(input,output,session){
   
   
   ### Normal distribution of residuals
-  ## QQ plot title
+  ## QQ plot 
+  # QQ plot title displayed 
   output$raw_qqplot_title<-renderText({
     req(input$residNormTest_check=="Quantile-quantile plot")
     paste("<h4>Quantitle-quantile Plot</h4>")
   })
   
-  ## QQ plot
+  # QQ plot 
   output$raw_qqplot<-renderPlot({
     req(input$residNormTest_check=="Quantile-quantile plot")
+    #custom qqplotter() function
     qqplotter(mod())
   })
     
-  ## Shapiro-Wilk test title
+  
+  ## Shapiro-Wilk test
+  # Shapiro-Wilk test title 
   output$raw_shapiro_title<-renderText({
     req(input$residNormTest_check=="Shapiro-Wilk normality test")
     paste("<h4>Shapiro-Wilk Test of Normality</h4>")
   })
   
-  ## Shapiro-Wilk test
+
+  # Shapiro-Wilk test results displayed as table
   output$raw_shapiro<-renderTable({
     req(input$residNormTest_check=="Shapiro-Wilk normality test")
     shapiro_test(resid(mod())) %>% 
@@ -316,25 +332,29 @@ server<-function(input,output,session){
   
   
   ### Equal variance
-  ## Scale-location plot title
+  ## Scale-location plot 
+  # Scale-location plot title displayed 
   output$raw_scale_loc_plot_title<-renderText({
     req(input$equalVarTest_check=="Scale-location plot")
     paste("<h4>Scale-location Plot</h4>")
   })
   
-  ## Scale-location plot
+  # Scale-location plot 
   output$raw_scale_loc_plot<-renderPlot({
     req(input$equalVarTest_check=="Scale-location plot")
-    plot(mod(),which=3,caption=NULL)
+    par(mar=c(5,5.5,4,2))
+    plot(mod(),which=3,caption=NULL,cex.sub=1.25,cex.lab=1.25,cex.axis=1.25)
   })
   
-  ## Levene's test title
+  
+  ## Levene's test
+  # Levene's test title 
   output$raw_levene_title<-renderText({
     req(input$equalVarTest_check=="Levene's test")
     paste("<h4>Levene's Test</h4>")
   })
   
-  ## Levene's test
+  # Levene's test results as table 
   output$raw_levene<-renderTable({
     req(input$equalVarTest_check=="Levene's test")
     levene_test(data(),value~trmt)
@@ -342,17 +362,21 @@ server<-function(input,output,session){
   
 
 #### Server: Tab 3-Data Transformation----------------------------------------------------------
-  ### Dynamically display UI for data transformation
-  output$data_transform<-renderUI({
+  ### Dynamic UI for data transformation
+  output$data_transform<-renderUI({ 
+    #checkbox needs to be checked for selector to display
     req(input$trans_check)
+    #selectizeInput() with one choice used so that selector defaults to NULL
     selectizeInput("trans_select","How would you like to transform your data?",
       multiple=TRUE, options=list(maxItems=1),
       choices=c("Log"="log","Square-root"="sqrt","Reciprocal"="recip"))
   })
   
+  
   ### Create reactive objects for testing ANOVA assumptions
   ## Transformed data object
   trans_data<-reactive({
+    #creates one of three types of data (called trans_data) based on selector choice
     if(input$trans_select=="log"){
       data() %>%
         mutate(trans_value=log(value))
@@ -370,17 +394,20 @@ server<-function(input,output,session){
 
   ## Model using transformed data
   trans_mod<-reactive({
+    #once checkbox checked and a selector input chosen, a lm() of transformed data is made
     req(input$trans_check,input$trans_select)
     lm(trans_value~trmt,data=trans_data())
     })
   
   
-  ### Dynamically display UI for testing ANOVA assumptions of transformed data
+  ### Dynamic UI for testing ANOVA assumptions of transformed data
   ## ANOVA Assumptions text
   output$trans_assump<-renderText({
+    #both UI components must not be NULL for text to display (and same with checkboxGroupInputs below)
     req(input$trans_check,input$trans_select)
     paste("<h4>Test ANOVA Assumptions</h4>")
   })
+  
   
   ## Normality checkbox
   output$trans_residNormTest<-renderUI({
@@ -388,6 +415,7 @@ server<-function(input,output,session){
     checkboxGroupInput("trans_residNormTest_check","Are residuals normally distributed?",
                        choices=c("Quantile-quantile plot","Shapiro-Wilk normality test"))
   })
+  
   
   ## Equal Variance checkbox
   output$trans_equalVarTest<-renderUI({
@@ -400,11 +428,13 @@ server<-function(input,output,session){
   ### Normal distribution of residuals
   ## QQ plot title
   output$trans_qqplot_title<-renderText({
+    #three requirements needed
     req(input$trans_check,
         input$trans_select,
         input$trans_residNormTest_check=="Quantile-quantile plot")
     paste("<h4>Quantitle-quantile Plot</h4>")
   })
+  
   
   ## QQ plot
   output$trans_qqplot<-renderPlot({
@@ -414,6 +444,7 @@ server<-function(input,output,session){
     qqplotter(trans_mod())
   })
   
+  
   ## Shapiro-Wilk test title
   output$trans_shapiro_title<-renderText({
     req(input$trans_check,
@@ -421,6 +452,7 @@ server<-function(input,output,session){
         input$trans_residNormTest_check=="Shapiro-Wilk normality test")
     paste("<h4>Shapiro-Wilk Test of Normality</h4>")
   })
+  
   
   ## Shapiro-Wilk test
   output$trans_shapiro<-renderTable({
@@ -436,19 +468,23 @@ server<-function(input,output,session){
   ### Equal variance
   ## Scale-location plot title
   output$trans_scale_loc_plot_title<-renderText({
+    #three requirements needed
     req(input$trans_check,
         input$trans_select,
         input$trans_equalVarTest_check=="Scale-location plot")
     paste("<h4>Scale-location Plot</h4>")
   })
   
+  
   ## Scale-location plot
   output$trans_scale_loc_plot<-renderPlot({
     req(input$trans_check,
         input$trans_select,
         input$trans_equalVarTest_check=="Scale-location plot")
-    plot(trans_mod(),which=3,caption=NULL)
+    par(mar=c(5,5.5,4,2))
+    plot(trans_mod(),which=3,caption=NULL,cex.sub=1.25,cex.lab=1.25,cex.axis=1.25)
   })
+  
   
   ## Levene's test title
   output$trans_levene_title<-renderText({
@@ -457,6 +493,7 @@ server<-function(input,output,session){
         input$trans_equalVarTest_check=="Levene's test")
     paste("<h4>Levene's Test</h4>")
   })
+  
   
   ## Levene's test
   output$trans_levene<-renderTable({
@@ -471,8 +508,14 @@ server<-function(input,output,session){
   ### ANOVA output
   ## ANOVA table title
   output$anova_table_title<-renderText({
+    #use of req() with input and if(input==...) prevents errors upon switching to tab and allows cleaner logic (e.g., disappears when de-selected)
+    #four possibile choice patterns lead to two outcomes, one of which is a validate() message (i.e., selecting transformed data when they aren't 
+    #available)
     req(input$anovaTest_radio)
-    if(input$anovaTest_radio=="trans" & is.null(input$trans_select)){
+    if(input$anovaTest_radio=="trans" & input$trans_check==FALSE){
+      validate("Transform data first on the previous tab")
+    }
+    else if(input$anovaTest_radio=="trans" & is.null(input$trans_select)){
       validate("Transform data first on the previous tab")
     }
     else if(input$anovaTest_radio=="raw"){
@@ -486,6 +529,7 @@ server<-function(input,output,session){
   
   ## Run ANOVA on specified data source
   output$anova_table<-renderTable({
+    #again, same approach with req() followed by if/else if
     req(input$anovaTest_radio)
     if(input$anovaTest_radio=="raw"){
       anova_tabler(mod())
@@ -495,16 +539,20 @@ server<-function(input,output,session){
     }
   })
 
+  
   ### Tukey output
   ## Title of Tukey test summary table
   output$tukey_table_title<-renderText({
+    #first req() for selecting the test
     req(input$tukeyTest_check=="run")
+    #if ANOVA data source empty, then message
     if(is.null(input$anovaTest_radio)){
       validate("Run ANOVA before performing Tukey HSD tests")
     }
-    if(is.null(input$trans_select)){
+    if(input$anovaTest_radio=="trans" & ((input$trans_check==FALSE)|is.null(input$trans_select))){
       validate("Run ANOVA before performing Tukey HSD tests")
     }
+    #second req() is having data source selected
     req(input$anovaTest_radio)
     paste("<h4>Summary of Tukey HSD Tests</h4>")
   })
@@ -512,35 +560,43 @@ server<-function(input,output,session){
   
   ## Tukey HSD test summary table
   output$tukey_table<-renderTable({
+    #two reqs()--data source and correct checkbox
     req(input$anovaTest_radio,
         input$tukeyTest_check=="run")
+    #if for raw data
     if(input$anovaTest_radio=="raw"){
       tukey_hsd(mod()) %>%
         select(-c(null.value,term))
     }
+    #else if for transformed data
     else if(input$anovaTest_radio=="trans"){
       tukey_hsd(trans_mod()) %>%
         select(-c(null.value,term))
     }
   })
   
+  
   ## Title of graphical Tukey HSD test results
   output$tukey_plot_title<-renderText({
     req(input$tukeyTest_check=="visualize")
+    #validate messages accompany blank plots
     if(is.null(input$anovaTest_radio)){
       validate("Run ANOVA before performing Tukey HSD tests")
     }
-    if(is.null(input$trans_select)){
+    if(input$anovaTest_radio=="trans" & ((input$trans_check==FALSE)|is.null(input$trans_select))){
       validate("Run ANOVA before performing Tukey HSD tests")
     }
     req(input$anovaTest_radio)
     paste("<h4>Multiple Comparisons Between All Pairs (Tukey)</h4>")
   })
   
+  
   ## Plot of Tukey HSD test results
   output$tukey_plot<-renderPlot({
+    #similar to test results...two reqs
     req(input$anovaTest_radio,
         input$tukeyTest_check=="visualize")
+    #if/else if for raw and transformed data, respectively
     if(input$anovaTest_radio=="raw"){
       tukey_plotter(mod())
     }
@@ -551,47 +607,61 @@ server<-function(input,output,session){
 
 
 #### Server: Tab 5-Run Kruskal-Wallis-------------------------------------------------------------
-  ### Display title of boxplot
+  ### Boxplot
+  ## Boxplot title
+  #simply a reminder of the boxplot from the first tab
   output$review_boxplot_title<-renderText({
     req(input$reviewViz_check)
     paste("<h4>Boxplot</h4>")
   })
   
-  ### Visualize data
+  
+  ## Boxplot
   output$review_boxplot<-renderPlot({
     req(input$reviewViz_check)
     boxplotter(data(),trmt,value)
   })
   
-  ## Display Kruskal-Wallis Table Title
+  
+  ### Kruksal-Wallis
+  ## Kruskal-Wallis Table Title
   output$raw_kw_table_title<-renderText({
+    #checkbox requirement
     req(input$kruskalTest_check)
     paste("<h4>Kruskal-Wallis Test Results</h4>")
   })
   
-  ### Run Kruskal-Wallis Test
+  
+  ## Run Kruskal-Wallis Test
   output$raw_kw_table<-renderTable({
     req(input$kruskalTest_check)
     kruskal_test(data(),value~trmt) %>%
       select(-c(`.y.`,method))
   })
   
-  ### Dynamically display Dunn test input
+  
+  ### Dunn test
+  ## Dynamically display Dunn test input
   output$dunnTest<-renderUI({
+    #K-W test must be run first
     req(input$kruskalTest_check)
     checkboxInput("dunnTest_check","Run Dunn post-hoc test")
   })
   
 
-  ### Display Dunn post-hoc test results title
+  ## Dunn post-hoc test results title
   output$raw_dunn_table_title<-renderText({
+    #both K-W and Dunn boxes need to be checked
+    req(input$kruskalTest_check)
     req(input$dunnTest_check)
     paste("<h4>Dunn Test Results</h4>")
   })
   
-  ### Run Dunn post-hoc test
+  
+  ## Run Dunn post-hoc test
   output$raw_dunn_table<-renderTable({
-    if(req(input$dunnTest_check)==TRUE)
+    req(input$kruskalTest_check)
+    req(input$dunnTest_check)
     dunn_test(data(),value~trmt) %>%
       select(-`.y.`)
   })
@@ -601,20 +671,20 @@ shinyApp(ui,server)
 
 
 #DONE
-#added validate messages to Run ANOVA tab
-#added developer tab
+#fixed more logic in server code
+#increased text and legend symbol sizes in plots
+
 
 #WORK IN PROGRESS
 
 
-
 #NEXT STEPS
-#add error/warning message if select transformed data when haven't transformed yet
-#organize code
-#style
-#make plot labels and legend larger
-#fix Tukey plot so that geom_text more readable
+#add style
+#add validate()s to first tab if viz selected without data
+
+
+#POSSIBLE IMPROVEMENTS
 #interactive plots--click/brushing and display
-#annotate code
+#make code more flexible so that it retains trmt categories
 
 
