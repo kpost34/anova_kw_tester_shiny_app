@@ -7,6 +7,7 @@ library(ggplot2)
 library(readxl)
 library(vroom)
 library(rstatix)
+library(bslib)
 
 #load functions
 source(here("anova_kw_tester_app","anova_kw_tester_app_functions.R"))
@@ -16,6 +17,8 @@ stat_list<-list(n=length,min=min,median=median,mean=mean,max=max,sd=sd,se=functi
 
 ##### UI=================================================================================
 ui<-navbarPage(strong("ANOVA & Kruskal-Wallis Tester"),id="mainTabs",
+    #select bootswatch theme
+    theme=bslib::bs_theme(bootswatch="darkly",font_scale=0.9),
   
   #### UI: Tab 1-Data Input & Exploration----------------------------------------------
   tabPanel("Data Input & Exploration",value="data_input",
@@ -177,7 +180,7 @@ server<-function(input,output,session){
   
   output$data_upload_info<-renderUI({
     req(input$dataSource_radio=="file")
-      actionButton("info_file",HTML("<em> i </em>"),style='margin-top:25px',class="btn btn-primary")
+      actionButton("info_file",HTML("<em> i </em>"),style='margin-top:29px',class="btn btn-primary")
   })
   
   
@@ -211,8 +214,8 @@ server<-function(input,output,session){
   
   
   ### Object code
-  ## Create reactive data object either via uploaded or simulated data
-  data<-reactive({
+  ## Create reactive dat object either via uploaded or simulated data
+  dat<-reactive({
     #set up conditional...if file is selected and a file is chosen then
     if(input$dataSource_radio=="file"){
       req(input$upload_file)
@@ -254,7 +257,10 @@ server<-function(input,output,session){
   # Summary table body 
   output$raw_table<-renderTable({
     req(input$initialViz_check=="table")
-    data() %>%
+    if(is.null(input$upload_file) & is.null(input$n_sim)){
+      validate("Please simulate or upload data first")
+    }
+    dat() %>%
       group_by(trmt) %>%
         summarize(across(value,stat_list,.names="{.fn}"))
   })
@@ -270,8 +276,11 @@ server<-function(input,output,session){
   ## Boxplot 
   output$raw_boxplot<-renderPlot({
     req(input$initialViz_check=="boxplot")
+    if(is.null(input$upload_file) & is.null(input$n_sim)){
+      validate("Please simulate or upload data first")
+    }
     #custom boxplotter() function
-    boxplotter(data(),trmt,value)
+    boxplotter(dat(),trmt,value)
   })
   
   
@@ -285,8 +294,11 @@ server<-function(input,output,session){
   # Bar plot 
   output$raw_barplot<-renderPlot({
     req(input$initialViz_check=="barplot")
+    if(is.null(input$upload_file) & is.null(input$n_sim)){
+      validate("Please simulate or upload data first")
+    }
     #custom boxplotter() function
-    barplotter(data(),trmt,value)
+    barplotter(dat(),trmt,value)
   })
 
   
@@ -294,7 +306,7 @@ server<-function(input,output,session){
   ### Build model if one of two tabs selected
   mod<-reactive({
     req(input$mainTabs %in% c("ANOVA_assump","run_ANOVA"))
-    lm(value~trmt,data=data())
+    lm(value~trmt,data=dat())
   })
   
   
@@ -357,7 +369,7 @@ server<-function(input,output,session){
   # Levene's test results as table 
   output$raw_levene<-renderTable({
     req(input$equalVarTest_check=="Levene's test")
-    levene_test(data(),value~trmt)
+    levene_test(dat(),value~trmt)
   })
   
 
@@ -378,15 +390,15 @@ server<-function(input,output,session){
   trans_data<-reactive({
     #creates one of three types of data (called trans_data) based on selector choice
     if(input$trans_select=="log"){
-      data() %>%
+      dat() %>%
         mutate(trans_value=log(value))
     }
     else if(input$trans_select=="sqrt"){
-      data() %>%
+      dat() %>%
         mutate(trans_value=sqrt(value))
     }
     else if(input$trans_select=="recip"){
-      data() %>%
+      dat() %>%
         mutate(trans_value=recip(value))
     }
   })
@@ -619,7 +631,7 @@ server<-function(input,output,session){
   ## Boxplot
   output$review_boxplot<-renderPlot({
     req(input$reviewViz_check)
-    boxplotter(data(),trmt,value)
+    boxplotter(dat(),trmt,value)
   })
   
   
@@ -635,7 +647,7 @@ server<-function(input,output,session){
   ## Run Kruskal-Wallis Test
   output$raw_kw_table<-renderTable({
     req(input$kruskalTest_check)
-    kruskal_test(data(),value~trmt) %>%
+    kruskal_test(dat(),value~trmt) %>%
       select(-c(`.y.`,method))
   })
   
@@ -662,7 +674,7 @@ server<-function(input,output,session){
   output$raw_dunn_table<-renderTable({
     req(input$kruskalTest_check)
     req(input$dunnTest_check)
-    dunn_test(data(),value~trmt) %>%
+    dunn_test(dat(),value~trmt) %>%
       select(-`.y.`)
   })
 }
@@ -671,16 +683,16 @@ shinyApp(ui,server)
 
 
 #DONE
-#fixed more logic in server code
-#increased text and legend symbol sizes in plots
-
+#added validate()s to first tab if viz selected without data
+#added style
 
 #WORK IN PROGRESS
 
 
 #NEXT STEPS
-#add style
-#add validate()s to first tab if viz selected without data
+#point sizes in graphs
+#insufficient decimal places/sigfigs in tables
+
 
 
 #POSSIBLE IMPROVEMENTS
