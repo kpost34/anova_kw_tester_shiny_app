@@ -28,7 +28,7 @@ boxplotter<-function(df,x,y){
   df %>%
     ggplot(aes(x={{x}},y={{y}})) +
     geom_boxplot(outlier.shape=NA) +
-    geom_point(aes(color={{x}}),position=position_jitterdodge()) +
+    geom_point(aes(color={{x}}),position=position_jitterdodge(),size=2.5) +
     scale_color_viridis_d(begin=0,end=0.65) +
     theme_bw() +
     theme(axis.text=element_text(size=15),
@@ -63,7 +63,7 @@ qqplotter<-function(model){
   resid(model) %>%
   as_tibble() %>%
   ggplot(aes(sample=value)) +
-  stat_qq(color="steelblue") + 
+  stat_qq(color="steelblue",size=2.5) + 
   stat_qq_line() +
   labs(x="Theoretical quantiles",
        y="Standardized residuals") +

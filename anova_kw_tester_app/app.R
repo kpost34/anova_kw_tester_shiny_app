@@ -355,7 +355,7 @@ server<-function(input,output,session){
   output$raw_scale_loc_plot<-renderPlot({
     req(input$equalVarTest_check=="Scale-location plot")
     par(mar=c(5,5.5,4,2))
-    plot(mod(),which=3,caption=NULL,cex.sub=1.25,cex.lab=1.25,cex.axis=1.25)
+    plot(mod(),which=3,pch=1,cex=1.3,caption=NULL,cex.sub=1.25,cex.lab=1.25,cex.axis=1.25)
   })
   
   
@@ -494,7 +494,7 @@ server<-function(input,output,session){
         input$trans_select,
         input$trans_equalVarTest_check=="Scale-location plot")
     par(mar=c(5,5.5,4,2))
-    plot(trans_mod(),which=3,caption=NULL,cex.sub=1.25,cex.lab=1.25,cex.axis=1.25)
+    plot(trans_mod(),which=3,pch=1,cex=1.3,caption=NULL,cex.sub=1.25,cex.lab=1.25,cex.axis=1.25)
   })
   
   
@@ -683,15 +683,13 @@ shinyApp(ui,server)
 
 
 #DONE
-#added validate()s to first tab if viz selected without data
-#added style
+#increased point sizes of plots and changed point shape of scale-location plot
 
 #WORK IN PROGRESS
 
 
 #NEXT STEPS
-#point sizes in graphs
-#insufficient decimal places/sigfigs in tables
+#add readme
 
 
 
