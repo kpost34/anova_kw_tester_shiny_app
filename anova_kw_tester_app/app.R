@@ -47,8 +47,7 @@ ui<-navbarPage(strong("ANOVA & Kruskal-Wallis Tester"),id="mainTabs",
         plotOutput("raw_boxplot"),
         br(),
         htmlOutput("raw_barplot_title"),
-        plotOutput("raw_barplot")
-      )
+        plotOutput("raw_barplot"))
     )
   ),
   
@@ -273,7 +272,7 @@ server<-function(input,output,session){
     paste("<h4>Boxplot</h4>")
   })
   
-  ## Boxplot 
+  # Boxplot 
   output$raw_boxplot<-renderPlot({
     req(input$initialViz_check=="boxplot")
     if(is.null(input$upload_file) & is.null(input$n_sim)){
@@ -283,7 +282,7 @@ server<-function(input,output,session){
     boxplotter(dat(),trmt,value)
   })
   
-  
+
   ## Bar plot
   # Bar plot title 
   output$raw_barplot_title<-renderText({
@@ -679,22 +678,4 @@ server<-function(input,output,session){
   })
 }
 shinyApp(ui,server)
-
-
-
-#DONE
-#increased point sizes of plots and changed point shape of scale-location plot
-
-#WORK IN PROGRESS
-
-
-#NEXT STEPS
-#add readme
-
-
-
-#POSSIBLE IMPROVEMENTS
-#interactive plots--click/brushing and display
-#make code more flexible so that it retains trmt categories
-
 
