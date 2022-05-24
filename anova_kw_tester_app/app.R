@@ -9,7 +9,7 @@ library(rstatix)
 library(bslib)
 
 #load functions
-source("anova_kw_tester_app/anova_kw_tester_app_functions.R")
+source("anova_kw_tester_app_functions.R")
     
 #create list for summary tables
 stat_list<-list(n=length,min=min,median=median,mean=mean,max=max,sd=sd,se=function(x) sd(x)/sqrt(length(x)))
